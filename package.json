@@ -1,0 +1,69 @@
+{
+  "name": "ygo",
+  "version": "1.0.0",
+  "description": "游戏王卡牌生成与浏览工具",
+  "main": "electron/main.js",
+  "scripts": {
+    "renderer:dev": "vite --port 5173",
+    "desktop:dev": "concurrently -k \"npm run renderer:dev\" \"npm run electron:wait\"",
+    "electron:wait": "wait-on http-get://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "desktop:dev:renderer": "npm run renderer:dev",
+    "build": "vite build",
+    "desktop:build": "npm run build && electron-builder",
+    "desktop:pack": "npm run build && electron-builder --dir",
+    "start": "npm run desktop:dev",
+    "dev": "npm run desktop:dev"
+  },
+  "keywords": [
+    "electron",
+    "vue",
+    "yugioh",
+    "card-generator"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "naive-ui": "^2.40.1",
+    "pinia": "^2.2.6",
+    "vue": "^3.5.13",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^32.1.2",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.4.11",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.ygo.app",
+    "productName": "YGO",
+    "directories": {
+      "output": "dist_electron",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "public/assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false,
+      "icon": "public/assets/app/logo-256x256.png"
+    },
+    "portable": {
+      "artifactName": "YGO-${version}.exe"
+    }
+  },
+  "type": "commonjs"
+}
