@@ -2,7 +2,7 @@
 
 ## 简介
 
-YGO 是一款用于生成和浏览游戏王卡牌的桌面应用程序，基于 Electron + Vue 3 构建。
+YGO 是一款用于生成和浏览游戏王卡牌的桌面应用程序，基于 Electron + React 构建。
 
 ## 功能特性
 
@@ -29,9 +29,9 @@ YGO 是一款用于生成和浏览游戏王卡牌的桌面应用程序，基于 
 
 ## 技术栈
 
-- **前端框架**：Vue 3
-- **状态管理**：Pinia
-- **UI 组件库**：Naive UI
+- **前端框架**：React 18
+- **状态管理**：Zustand
+- **UI 组件库**：lobe-ui + Ant Design
 - **桌面框架**：Electron
 - **构建工具**：Vite + electron-builder
 
@@ -39,8 +39,8 @@ YGO 是一款用于生成和浏览游戏王卡牌的桌面应用程序，基于 
 
 ### 环境要求
 
-- Node.js >= 16
-- npm >= 8
+- Node.js >= 18
+- npm >= 9
 
 ### 安装依赖
 
@@ -65,31 +65,44 @@ npm run desktop:build
 ```
 YGO/
 ├── electron/          # Electron 主进程
-│   ├── main.js        # 主进程入口
+│   ├── main.cjs       # 主进程入口
 │   └── preload.js     # 预加载脚本
-├── src/               # Vue 渲染进程
-│   ├── assets/        # 静态资源
-│   ├── components/    # Vue 组件
-│   ├── config/        # 配置
-│   ├── router/        # 路由
-│   ├── stores/        # Pinia 状态
-│   ├── views/         # 页面视图
-│   ├── App.vue        # 根组件
-│   └── main.js        # 渲染进程入口
-├── public/            # 公共资源
-│   └── assets/        # 卡牌素材资源
+├── src/               # React 渲染进程
+│   ├── assets/        # 静态资源（卡牌素材、样式）
+│   │   ├── css/       # 全局样式变量
+│   │   ├── images/    # 图片资源
+│   │   └── Mold/      # 卡牌素材资源
+│   ├── components/    # React 组件
+│   ├── config/        # 配置常量
+│   ├── pages/         # 页面视图
+│   ├── store/         # Zustand 状态管理
+│   ├── App.jsx        # 根组件
+│   └── main.jsx       # 渲染进程入口
 ├── package.json
 ├── vite.config.js
+├── copy-assets.js     # 资源复制脚本
 └── index.html
 ```
+
+## 资源说明
+
+卡牌素材资源位于 `src/assets/Mold/` 目录下，包含：
+- `Arrow/` - 箭头图标
+- `Attribute/` - 属性图标（支持中、英、日三种语言）
+- `Font/` - 卡牌字体文件
+- `Frame/` - 卡牌边框模板
+- `Holo/` - 全息效果素材
+- `Icon/` - 类型图标
+- `Star/` - 等级/阶级星星
 
 ## 赞助
 
 如果你觉得这个项目对你有帮助，欢迎扫描下方二维码进行赞助：
 
-![支付宝](public/assets/images/alipay_payment_code.jpg)
-![微信](public/assets/images/wechat_payment_code.jpg)
+| 支付宝 | 微信 |
+| :---: | :---: |
+| <img src="src/assets/images/alipay_payment_code.jpg" width="200" height="231"> | <img src="src/assets/images/wechat_payment_code.jpg" width="200" height="219"> |
 
 ## 许可证
 
-ISC
+MIT
