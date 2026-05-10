@@ -16,5 +16,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveCards: (cards) => ipcRenderer.invoke('save-cards', cards),
   onSystemThemeChanged: (callback) => {
     ipcRenderer.on('system-theme-changed', (event, theme) => callback(theme));
-  }
+  },
+
+  windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+  windowClose: () => ipcRenderer.invoke('window-close'),
+  windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+  
+  toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
+  isDevToolsOpened: () => ipcRenderer.invoke('is-devtools-opened'),
+  
+  setTheme: (theme) => ipcRenderer.send('set-theme', theme)
 });

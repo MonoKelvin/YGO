@@ -1,14 +1,14 @@
 {
   "name": "ygo",
   "version": "1.0.0",
-  "description": "游戏王卡牌生成与浏览工具",
-  "main": "electron/main.js",
+  "description": "游戏王卡牌生成器",
+  "main": "electron/main.cjs",
   "scripts": {
     "renderer:dev": "vite --port 5173",
     "desktop:dev": "concurrently -k \"npm run renderer:dev\" \"npm run electron:wait\"",
-    "electron:wait": "wait-on http-get://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "electron:wait": "wait-on http-get://localhost:5173 http-get://localhost:5174 http-get://localhost:5175 http-get://localhost:5176 http-get://localhost:5177 http-get://localhost:5178 http-get://localhost:5179 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
     "desktop:dev:renderer": "npm run renderer:dev",
-    "build": "vite build",
+    "build": "vite build && node copy-assets.js",
     "desktop:build": "npm run build && electron-builder",
     "desktop:pack": "npm run build && electron-builder --dir",
     "start": "npm run desktop:dev",
@@ -16,20 +16,23 @@
   },
   "keywords": [
     "electron",
-    "vue",
+    "react",
     "yugioh",
     "card-generator"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "naive-ui": "^2.40.1",
-    "pinia": "^2.2.6",
-    "vue": "^3.5.13",
-    "vue-router": "^4.4.5"
+    "@lobehub/ui": "^1.170.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^32.1.2",
@@ -46,24 +49,35 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "public/**/*"
+      "electron/**/*"
     ],
     "extraResources": [
       {
-        "from": "public/assets",
+        "from": "src/assets",
         "to": "assets",
         "filter": ["**/*"]
       }
     ],
     "win": {
-      "target": "portable",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
       "signAndEditExecutable": false,
-      "icon": "public/assets/app/logo-256x256.png"
+      "icon": "src/assets/app/logo-256x256.png"
     },
-    "portable": {
-      "artifactName": "YGO-${version}.exe"
+    "nsis": {
+      "oneClick": true,
+      "allowElevation": true,
+      "installerIcon": "src/assets/app/logo-256x256.png",
+      "uninstallerIcon": "src/assets/app/logo-256x256.png",
+      "installerHeaderIcon": "src/assets/app/logo-256x256.png",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "YGO"
     }
   },
-  "type": "commonjs"
+  "type": "module"
 }

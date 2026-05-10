@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeTheme, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -8,11 +8,11 @@ const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
-    frame: true,
+    width: 1000,
+    height: 700,
+    minWidth: 800,
+    minHeight: 550,
+    frame: false,
     show: false,
     backgroundColor: '#1a1d24',
     webPreferences: {
@@ -29,7 +29,6 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
@@ -100,7 +99,7 @@ ipcMain.handle('get-app-path', () => {
 
 ipcMain.handle('get-resource-path', () => {
   if (isDev) {
-    return path.join(__dirname, '../public/assets');
+    return path.join(__dirname, '../src/assets');
   }
   return path.join(process.resourcesPath, 'assets');
 });
@@ -156,6 +155,48 @@ ipcMain.handle('save-cards', async (event, cards) => {
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('window-minimize', () => {
+  mainWindow.minimize();
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  mainWindow.close();
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow.isMaximized();
+});
+
+ipcMain.handle('toggle-devtools', () => {
+  if (mainWindow.webContents.isDevToolsOpened()) {
+    mainWindow.webContents.closeDevTools();
+  } else {
+    mainWindow.webContents.openDevTools();
+  }
+});
+
+ipcMain.handle('is-devtools-opened', () => {
+  return mainWindow.webContents.isDevToolsOpened();
+});
+
+ipcMain.on('set-theme', (event, theme) => {
+  if (theme === 'system') {
+    nativeTheme.themeSource = 'system';
+  } else if (theme === 'dark') {
+    nativeTheme.themeSource = 'dark';
+  } else {
+    nativeTheme.themeSource = 'light';
   }
 });
 
