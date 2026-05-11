@@ -160,6 +160,7 @@ export default function DeckDetailEditor({ deckId }) {
           <label className="deck-meta-label">
             名称
             <Input
+              variant="outlined"
               value={nameDraft}
               onChange={(e) => setNameDraft(e.target.value)}
               onBlur={flushName}
@@ -171,6 +172,7 @@ export default function DeckDetailEditor({ deckId }) {
           <label className="deck-meta-label">
             简介
             <TextArea
+              variant="outlined"
               value={deck.description}
               onChange={(e) =>
                 handleMeta({ description: e.target.value })
@@ -184,6 +186,7 @@ export default function DeckDetailEditor({ deckId }) {
           <label className="deck-meta-label">
             备注
             <TextArea
+              variant="outlined"
               value={deck.notes}
               onChange={(e) => handleMeta({ notes: e.target.value })}
               placeholder="自用备忘、比赛记录等"
@@ -218,10 +221,10 @@ export default function DeckDetailEditor({ deckId }) {
               已选 <strong>{selection.size}</strong> 张
             </Text>
             <Flexbox horizontal gap={8} align="center">
-              <Button danger onClick={confirmBatchRemove}>
+              <Button variant="outlined" danger onClick={confirmBatchRemove}>
                 删除所选
               </Button>
-              <Button type="link" onClick={() => setSelection(new Set())}>
+              <Button variant="outlined" type="link" onClick={() => setSelection(new Set())}>
                 取消选择
               </Button>
             </Flexbox>
@@ -296,7 +299,7 @@ export default function DeckDetailEditor({ deckId }) {
           />
         </div>
 
-        <Button danger icon={<Trash2 size={16} />} onClick={confirmClear} block>
+        <Button variant="outlined" danger icon={<Trash2 size={16} />} onClick={confirmClear} block>
           清空该卡组全部卡牌
         </Button>
       </section>

@@ -12,6 +12,5 @@
   aspect-ratio: 813 / 1185;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  background: var(--color-card-art-matte);
   vertical-align: top;
 }

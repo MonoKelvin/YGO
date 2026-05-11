@@ -8,12 +8,13 @@ import {
   forwardRef,
 } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Button, Text } from '@lobehub/ui'
+import { Button, ScrollArea, Text } from '@lobehub/ui'
 import {
   ExternalLink,
   FileText,
   FolderOpen,
   Link2,
+  BookOpen,
   BookMarked,
   ChevronUp,
 } from 'lucide-react'
@@ -30,10 +31,7 @@ import { toString } from 'mdast-util-to-string'
 import { RULE_REFERENCE_SOURCES } from '../../config/ruleSources'
 import './RulesWiki.css'
 
-/** 正文滚动区内将标题对齐到可视区域顶部时的预留偏移（与 scroll-margin 协调） */
 const RULES_WIKI_SCROLL_ALIGN_TOP = 88
-
-/** 正文向下滚动超过该像素后，在正文区域顶部中间显示「回到顶部」 */
 const SCROLL_TOP_BTN_SHOW_PX = 200
 
 const RULE_SECTIONS_RAW = [
@@ -69,10 +67,6 @@ const RULE_SECTIONS_RAW = [
   },
 ]
 
-/**
- * 与 ReactMarkdown（remark-parse + remark-gfm）同一 mdast 管线提取二级标题，
- * 保证目录文案、顺序与正文渲染一致。
- */
 function extractSectionH2Nav(sectionId, md) {
   try {
     const tree = unified().use(remarkParse).use(remarkGfm).parse(md || '')
@@ -92,7 +86,6 @@ function extractSectionH2Nav(sectionId, md) {
   }
 }
 
-/** 在 mdast 上写入 h2 的 data.hProperties.id，与 extractSectionH2Nav 的序号规则一致 */
 function remarkHeadingIds(sectionId) {
   return (tree) => {
     try {
@@ -176,7 +169,6 @@ function MarkdownSection({ section, sharedMd }) {
       h1: ({ children }) => (
         <h1 className="rules-wiki-h1">{children}</h1>
       ),
-      /** 只把 DOM 合法属性落到标签上，避免 node 等非 DOM 字段导致 id 未出现在元素上，目录无法定位 */
       h2: ({ children, id, className }) => (
         <h2
           id={id}
@@ -277,7 +269,6 @@ export default function RulesWiki() {
   const [activeId, setActiveId] = useState(() => orderedNavIds[0] ?? null)
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false)
 
-  /** 根据正文滚动位置，取「已通过可视区顶基准线」的最后一档目录（part 或 h2） */
   const syncActiveFromContentScroll = useCallback(() => {
     const root = contentScrollRef.current
     if (!root || !orderedNavIds.length) return
@@ -293,7 +284,6 @@ export default function RulesWiki() {
     setActiveId((prev) => (prev === chosen ? prev : chosen))
   }, [orderedNavIds])
 
-  /** 将锚点对齐到正文滚动容器可视区域顶部（无法再往上则停在 scrollTop=0） */
   const scrollContentToId = useCallback((id) => {
     const root = contentScrollRef.current
     const el = document.getElementById(id)
@@ -310,7 +300,6 @@ export default function RulesWiki() {
     contentScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
-  /** 规则百科正文区独立滚动，与 Layout 外层滚动分开持久化 */
   useEffect(() => {
     const root = contentScrollRef.current
     if (!root) return undefined
@@ -358,7 +347,6 @@ export default function RulesWiki() {
     return () => root.removeEventListener('scroll', onScroll)
   }, [syncActiveFromContentScroll])
 
-  /** 布局提交后再算一次，避免首帧锚点未挂载导致目录高亮滞后 */
   useLayoutEffect(() => {
     syncActiveFromContentScroll()
     const root = contentScrollRef.current
@@ -367,7 +355,6 @@ export default function RulesWiki() {
     }
   }, [orderedNavIds, syncActiveFromContentScroll])
 
-  /** 目录条目滚入可视（右侧目录自身滚动区内） */
   useEffect(() => {
     const nav = tocNavRef.current
     if (!nav || !activeId) return
@@ -419,18 +406,19 @@ export default function RulesWiki() {
 
   return (
     <div className="rules-wiki-page">
-      <header className="rules-wiki-header">
-        <div>
-          <h1 className="rules-wiki-page-heading">规则百科</h1>
-          <p className="rules-wiki-lead">
-            开篇为「百科引言」（世界观、维基与官网、动画赛事与数据库外链）；其后为打牌规则，由浅入深。细则以 Konami 与数据库为准。
-          </p>
-        </div>
-      </header>
+      <div className="page-header">
+        <h1 className="page-title">
+          <BookOpen size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+          规则百科
+        </h1>
+        <p className="page-description">
+          开篇为「百科引言」（世界观、维基与官网、动画赛事与数据库外链）；其后为打牌规则，由浅入深。细则以 Konami 与数据库为准。
+        </p>
+      </div>
 
       <div className="rules-wiki-layout">
         <div className="rules-wiki-main">
-          <div
+          <ScrollArea
             ref={contentScrollRef}
             className="rules-wiki-article-scroll"
             tabIndex={0}
@@ -442,15 +430,16 @@ export default function RulesWiki() {
                 className="rules-wiki-scroll-top-float"
                 aria-hidden={false}
               >
-                <button
-                  type="button"
+                <Button
+                  variant="outlined"
+                  size="small"
                   className="rules-wiki-scroll-top-btn"
                   onClick={scrollContentToTop}
                   title="正文回到顶部"
                   aria-label="正文回到顶部"
                 >
-                  <ChevronUp size={18} strokeWidth={2} aria-hidden />
-                </button>
+                  <ChevronUp size={18} strokeWidth={2} />
+                </Button>
               </div>
             )}
             <article className="rules-wiki-article">
@@ -460,7 +449,7 @@ export default function RulesWiki() {
                 </section>
               ))}
             </article>
-          </div>
+          </ScrollArea>
         </div>
 
         <aside className="rules-wiki-rail" aria-label="目录与资料">
@@ -488,6 +477,7 @@ export default function RulesWiki() {
               {RULE_REFERENCE_SOURCES.map((src) => (
                 <Button
                   key={src.id}
+                  variant="outlined"
                   size="small"
                   block
                   className="rules-wiki-source-btn"
@@ -513,6 +503,7 @@ export default function RulesWiki() {
             </p>
             <div className="rules-wiki-appendix-actions">
               <Button
+                variant="outlined"
                 size="small"
                 icon={<FileText size={14} />}
                 onClick={() => void handleOpenPdf()}
@@ -521,6 +512,7 @@ export default function RulesWiki() {
                 打开本地 PDF
               </Button>
               <Button
+                variant="outlined"
                 size="small"
                 icon={<ExternalLink size={14} />}
                 onClick={() =>
@@ -533,6 +525,7 @@ export default function RulesWiki() {
               </Button>
               {electron?.getResourcePath && (
                 <Button
+                  variant="outlined"
                   size="small"
                   icon={<FolderOpen size={14} />}
                   onClick={() => void handleOpenDocsFolder()}

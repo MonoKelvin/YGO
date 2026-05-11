@@ -24,7 +24,7 @@ import useCardStore from './store/useStore'
 import useYgoDatabaseStore from './store/useYgoDatabaseStore'
 import { pickPersistedSettings } from './utils/pickPersistedSettings'
 import { subscribeDebouncedSettingsPersist } from './utils/subscribeDebouncedSettingsPersist'
-import { useAppTheme, buildLobeTheme } from './theme'
+import { useAppTheme } from './theme'
 
 /** 规则百科 chunk 加载失败时的占位 UI（懒加载 catch 分支返回）。 */
 function RulesWikiLoadFailed() {
@@ -72,11 +72,6 @@ function BootstrapPlaceholder() {
 function AppContent() {
   const { resolvedAppearance } = useAppTheme()
   const [initialized, setInitialized] = useState(false)
-
-  const lobeThemeConfig = useMemo(
-    () => buildLobeTheme(resolvedAppearance),
-    [resolvedAppearance],
-  )
 
   // 从 Electron 读回持久化设置并同步到 Zustand；超时仍解锁 UI。安全定时器防止极端情况下 finally 未执行导致一直占位。
   useEffect(() => {
@@ -133,15 +128,11 @@ function AppContent() {
   }
 
   /**
-   * ThemeProvider：Lobe 主题与 antd token。
+   * ThemeProvider：Lobe 主题。
    * ToastHost / ModalHost / ContextMenuHost：全局 toast、栈式 Modal、右键菜单 portal。
    */
   return (
-    <ThemeProvider
-      appearance={resolvedAppearance}
-      customTheme={{ primaryColor: 'blue', neutralColor: 'gray' }}
-      theme={lobeThemeConfig}
-    >
+    <ThemeProvider appearance={resolvedAppearance}>
       <ToastHost />
       <ModalHost />
       <ContextMenuHost />
@@ -181,7 +172,17 @@ function AppContent() {
 function App() {
   return (
     <RouteErrorBoundary title="应用界面渲染失败">
-      <ConfigProvider motion={motion} locale="zh-CN">
+      <ConfigProvider
+        motion={motion}
+        locale="zh-CN"
+        componentDefaults={{
+          Button: { variant: 'outlined' },
+          Input: { variant: 'outlined' },
+          Select: { variant: 'outlined' },
+          InputNumber: { variant: 'outlined' },
+          TextArea: { variant: 'outlined' },
+        }}
+      >
         <AppContent />
       </ConfigProvider>
     </RouteErrorBoundary>

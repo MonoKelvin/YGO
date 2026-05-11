@@ -1,15 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react'
-import { Menu } from '@lobehub/ui'
-import {
-  Home,
-  Search,
-  Settings,
-  Library,
-  Layers,
-  BookOpen,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from 'lucide-react'
+import { Menu, DraggableSideNav, ScrollArea, Icon } from '@lobehub/ui'
+import { Home, Search, Settings, Library, Layers, BookOpen } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import useCardStore from '../../store/useStore'
 import PersistNavigation from '../navigation/PersistNavigation'
@@ -34,7 +25,6 @@ export default function LayoutComponent({ children }) {
   const contentRef = useRef(null)
   const collapsed = useCardStore((s) => s.settings.sidebarCollapsed ?? false)
 
-  /** 各路由主内容区滚动位置（切换返回后恢复） */
   useEffect(() => {
     const el = contentRef.current
     if (!el) return undefined
@@ -73,7 +63,6 @@ export default function LayoutComponent({ children }) {
     useCardStore.getState().setSetting('sidebarCollapsed', !collapsed)
   }
 
-  /** 主导航只应出现「上面一组」的 key；勿把 /settings 等传入 */
   const primarySelectedKey = useMemo(() => {
     const path = location.pathname
     if (path.startsWith('/library')) return '/library'
@@ -93,7 +82,7 @@ export default function LayoutComponent({ children }) {
     () =>
       menuItems.map((item) => ({
         key: item.key,
-        icon: <item.icon size={18} />,
+        icon: <Icon icon={item.icon} />,
         label: item.label,
       })),
     [],
@@ -103,7 +92,7 @@ export default function LayoutComponent({ children }) {
     () =>
       bottomMenuItems.map((item) => ({
         key: item.key,
-        icon: <item.icon size={18} />,
+        icon: <Icon icon={item.icon} />,
         label: item.label,
       })),
     [],
@@ -114,64 +103,41 @@ export default function LayoutComponent({ children }) {
       <PersistNavigation />
       <div className="app-layout">
         <TitleBar />
-        <div className="app-main-shell ant-layout">
-          <aside
-            className={[
-              'app-sider',
-              'ant-layout-sider',
-              collapsed ? 'ant-layout-sider-collapsed' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={{
-              width: collapsed ? 72 : 220,
-              maxWidth: collapsed ? 72 : 220,
-              minWidth: collapsed ? 72 : 220,
-            }}
-          >
-            <div className="ant-layout-sider-children">
+        <div className="app-main-shell">
+          <DraggableSideNav
+            expand={!collapsed}
+            header={() => (
               <div className="app-logo-row">
                 <span className="logo-text">YGO</span>
-                <button
-                  type="button"
-                  className="sider-pin-btn"
-                  onClick={handleToggleSidebar}
-                  title={collapsed ? '展开导航' : '折叠导航'}
-                  aria-label={collapsed ? '展开导航' : '折叠导航'}
-                >
-                  {collapsed ? (
-                    <PanelLeftOpen size={18} strokeWidth={1.75} />
-                  ) : (
-                    <PanelLeftClose size={18} strokeWidth={1.75} />
-                  )}
-                </button>
               </div>
-              <div className="sider-body">
-                <nav className="sider-nav-primary" aria-label="主导航">
-                  <Menu
-                    mode="inline"
-                    inlineCollapsed={collapsed}
-                    selectedKeys={primarySelectedKey ? [primarySelectedKey] : []}
-                    onClick={handleMenuClick}
-                    items={navItems}
-                    className="main-menu"
-                  />
-                </nav>
-                <div className="sider-nav-spacer" aria-hidden="true" />
-                <footer className="sider-footer">
-                  <Menu
-                    mode="inline"
-                    inlineCollapsed={collapsed}
-                    selectedKeys={settingsSelected ? ['/settings'] : []}
-                    onClick={handleMenuClick}
-                    items={settingsItems}
-                    className="settings-menu"
-                  />
-                </footer>
-              </div>
-            </div>
-          </aside>
-          <div className="app-main-inner ant-layout">
+            )}
+            body={(expand) => (
+              <ScrollArea style={{ height: '100%' }}>
+                <Menu
+                  mode="inline"
+                  inlineCollapsed={!expand}
+                  selectedKeys={primarySelectedKey ? [primarySelectedKey] : []}
+                  onClick={handleMenuClick}
+                  items={navItems}
+                  variant="borderless"
+                />
+              </ScrollArea>
+            )}
+            footer={(expand) => (
+              <Menu
+                mode="inline"
+                inlineCollapsed={!expand}
+                selectedKeys={settingsSelected ? ['/settings'] : []}
+                onClick={handleMenuClick}
+                items={settingsItems}
+                variant="borderless"
+              />
+            )}
+            onExpandChange={handleToggleSidebar}
+            width={220}
+            minWidth={54}
+          />
+          <div className="app-main-inner">
             <main ref={contentRef} className="app-content">
               {children}
             </main>

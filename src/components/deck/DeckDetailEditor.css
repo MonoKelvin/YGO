@@ -43,8 +43,6 @@
   padding: var(--spacing-sm) var(--control-gap-sm);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   max-width: 240px;
 }
@@ -60,13 +58,11 @@
 .deck-zone-title {
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-sm);
-  color: var(--color-text-primary);
 }
 
 .deck-zone-hint {
   margin: 0 0 var(--spacing-sm);
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
@@ -85,7 +81,7 @@
   gap: var(--spacing-sm);
   padding: var(--spacing-xs) 0;
   font-size: var(--font-size-sm);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .deck-list-name {

@@ -1,15 +1,14 @@
 .title-bar {
   height: 40px;
-  background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
   user-select: none;
 }
 
-/** 左右等宽占位，中间标题视觉居中（抵消右侧窗口按钮宽度） */
 .title-bar-drag {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   height: 100%;
   -webkit-app-region: drag;
 }
@@ -27,9 +26,32 @@
 
 .title-bar-side-right {
   justify-content: flex-end;
-  gap: 2px;
-  padding: 0 6px;
-  /** 仅按钮不可拖动；按钮左侧留白区域仍可拖动窗口 */
+  gap: 0;
+  padding-left: 6px;
+}
+
+.titlebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--lobe-color-text-3);
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.titlebar-btn:hover {
+  background-color: var(--lobe-color-fill-1);
+  color: var(--lobe-color-text-1);
+}
+
+.titlebar-btn-close:hover {
+  background-color: #e63946;
+  color: #ffffff;
 }
 
 .title-bar-center {
@@ -48,7 +70,6 @@
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.1em;
-  color: var(--color-ygo-brand);
   flex-shrink: 0;
 }
 
@@ -59,8 +80,6 @@
   min-width: 0;
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -68,7 +87,6 @@
 
 .title-bar-ver {
   flex-shrink: 0;
-  color: var(--color-text-muted);
   font-weight: 600;
 }
 
@@ -80,9 +98,6 @@
   text-transform: lowercase;
   padding: 2px var(--spacing-2xs);
   border-radius: var(--radius-sm);
-  color: var(--badge-dev-fg);
-  background-color: var(--badge-dev-bg);
-  box-shadow: inset 0 0 0 1px var(--badge-dev-ring);
 }
 
 .title-bar-dash {
@@ -90,36 +105,8 @@
   opacity: 0.45;
 }
 
-.title-bar-tagline {
+.titlebar-tagline {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.titlebar-ctl {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  min-height: 100%;
-  padding: 0;
-  margin: 0;
-  border: none;
-  /** 与系统标题栏一致：窗口控制区不用圆角按钮 */
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
-  -webkit-app-region: no-drag;
-}
-
-.titlebar-ctl:hover {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-}
-
-.titlebar-ctl-close:hover {
-  background: var(--color-window-close-hover);
-  color: var(--color-on-primary);
 }

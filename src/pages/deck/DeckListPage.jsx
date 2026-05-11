@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-
 import { Button, ContextMenuTrigger, Input, Modal, toast } from '@lobehub/ui'
 import { Layers, Plus, Pin, Eye, Pencil, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -11,7 +10,6 @@ import useYgoDatabaseStore from '../../store/useYgoDatabaseStore'
 
 import './DeckListPage.css'
 
-/** 卡组列表：网格封面、双击进入详情、右键快捷菜单。 */
 export default function DeckListPage() {
   const navigate = useNavigate()
   const decks = useYgoDatabaseStore((s) => s.decks)
@@ -116,28 +114,40 @@ export default function DeckListPage() {
 
   if (!decksLoaded) {
     return (
-      <div className="deck-list-loading">
-        <PageSpinner tip="加载卡组…" />
+      <div className="deck-list-page">
+        <div className="page-header">
+          <h1 className="page-title">
+            <Layers size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            我的卡组
+          </h1>
+        </div>
+        <div className="deck-list-loading">
+          <PageSpinner tip="加载卡组…" />
+        </div>
       </div>
     )
   }
 
   return (
     <div className="deck-list-page">
-      <header className="deck-list-header">
-        <div>
-          <h1 className="deck-list-title">
-            <Layers size={22} aria-hidden className="deck-list-title-icon" />
-            我的卡组
-          </h1>
-          <p className="deck-list-lead">
-            双击卡组进入详情编辑；在「卡牌数据库」可将卡牌加入所选卡组（支持多选批量）。右键卡组可快捷操作。
-          </p>
-        </div>
-        <Button type="primary" icon={<Plus size={16} />} onClick={handleNew}>
+      <div className="page-header">
+        <h1 className="page-title">
+          <Layers size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+          我的卡组
+        </h1>
+        <Button
+          variant="outlined"
+          type="primary"
+          icon={<Plus size={16} />}
+          onClick={handleNew}
+        >
           新建卡组
         </Button>
-      </header>
+      </div>
+
+      <p className="deck-list-lead">
+        双击卡组进入详情编辑；在「卡牌数据库」可将卡牌加入所选卡组（支持多选批量）。右键卡组可快捷操作。
+      </p>
 
       {decks.length === 0 ? (
         <div className="deck-list-empty-state">
@@ -148,7 +158,7 @@ export default function DeckListPage() {
           <p className="deck-list-empty-hint">
             点击右上角「新建卡组」创建你的第一副卡组
           </p>
-          <Button type="primary" icon={<Plus size={16} />} onClick={handleNew}>
+          <Button variant="outlined" type="primary" icon={<Plus size={16} />} onClick={handleNew}>
             新建卡组
           </Button>
         </div>
@@ -217,6 +227,7 @@ export default function DeckListPage() {
         }}
       >
         <Input
+          variant="outlined"
           value={renameValue}
           onChange={(e) => setRenameValue(e.target.value)}
           maxLength={80}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Minus, X, Expand, Shrink } from 'lucide-react'
+import { Minus, X, Square, SquareMinus } from 'lucide-react'
 import { APP_TAGLINE, APP_VERSION, IS_DEV_BUILD } from '../../config/appMeta'
 import './TitleBar.css'
 
@@ -59,35 +59,28 @@ export default function TitleBar() {
         </div>
         <div className="title-bar-side title-bar-side-right">
           <button
-            type="button"
-            className="titlebar-ctl"
             onClick={handleMinimize}
             title="最小化"
             aria-label="最小化"
+            className="titlebar-btn"
           >
-            <Minus size={16} strokeWidth={1.75} />
+            <Minus size={14} />
           </button>
           <button
-            type="button"
-            className="titlebar-ctl"
             onClick={handleMaximize}
             title={isMaximized ? '还原' : '最大化'}
             aria-label={isMaximized ? '还原' : '最大化'}
+            className="titlebar-btn"
           >
-            {isMaximized ? (
-              <Shrink size={16} strokeWidth={1.75} />
-            ) : (
-              <Expand size={16} strokeWidth={1.75} />
-            )}
+            {isMaximized ? <SquareMinus size={14} /> : <Square size={14} />}
           </button>
           <button
-            type="button"
-            className="titlebar-ctl titlebar-ctl-close"
             onClick={handleClose}
             title="关闭"
             aria-label="关闭"
+            className="titlebar-btn titlebar-btn-close"
           >
-            <X size={16} strokeWidth={1.75} />
+            <X size={14} />
           </button>
         </div>
       </div>

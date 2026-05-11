@@ -35,7 +35,6 @@
 .card-browser-empty {
   text-align: center;
   padding: var(--spacing-2xl);
-  color: var(--color-text-muted);
 }
 
 .empty-hint {
@@ -51,11 +50,6 @@
 
 .card-browser-card {
   cursor: pointer;
-  transition: box-shadow var(--transition-fast);
-}
-
-.card-browser-card:hover {
-  box-shadow: var(--shadow-lg);
 }
 
 .card-list-item {
@@ -66,7 +60,6 @@
 .card-thumb {
   width: 70px;
   height: 102px;
-  background: var(--color-bg-tertiary);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -75,7 +68,6 @@
   overflow: hidden;
 }
 
-/** 列表缩略：与卡牌逻辑尺寸 350×510 对应约 0.2 倍 */
 .card-thumb-preview-wrap {
   flex-shrink: 0;
   width: 70px;
@@ -93,7 +85,6 @@
 
 .card-thumb-text {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
 }
 
 .card-info {
@@ -104,7 +95,6 @@
 .card-info h3 {
   margin: 0 0 var(--spacing-xs);
   font-size: var(--font-size-lg);
-  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -113,7 +103,6 @@
 .card-info p {
   margin: 0;
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
 }
 
 .card-delete-btn {
@@ -158,16 +147,13 @@
 .card-detail-info h3 {
   margin: 0 0 var(--spacing-sm);
   font-size: var(--font-size-xl);
-  color: var(--color-text-primary);
 }
 
 .card-detail-info p {
   margin: 0 0 var(--spacing-xs);
   font-size: var(--font-size-md);
-  color: var(--color-text-muted);
 }
 
 .card-detail-desc {
   white-space: pre-wrap;
-  color: var(--color-text-secondary);
 }

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button, toast } from '@lobehub/ui'
 import PageSpinner from '../../components/common/PageSpinner'
 import { openConfirmModal } from '../../utils/openConfirmModal'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Layers } from 'lucide-react'
 import DeckDetailEditor from '../../components/deck/DeckDetailEditor'
 import useYgoDatabaseStore from '../../store/useYgoDatabaseStore'
 import './DeckDetailPage.css'
@@ -46,8 +46,16 @@ export default function DeckDetailPage() {
 
   if (!decksLoaded) {
     return (
-      <div className="deck-detail-loading">
-        <PageSpinner tip="加载卡组…" />
+      <div className="deck-detail-page">
+        <div className="page-header">
+          <h1 className="page-title">
+            <Layers size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            卡组详情
+          </h1>
+        </div>
+        <div className="deck-detail-loading">
+          <PageSpinner tip="加载卡组…" />
+        </div>
       </div>
     )
   }
@@ -58,15 +66,13 @@ export default function DeckDetailPage() {
 
   return (
     <div className="deck-detail-page">
-      <div className="deck-detail-toolbar">
+      <div className="page-header">
+        <h1 className="page-title">
+          <Layers size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+          {deck.name}
+        </h1>
         <Button
-          type="text"
-          icon={<ArrowLeft size={18} />}
-          onClick={() => navigate('/deck')}
-        >
-          返回卡组列表
-        </Button>
-        <Button
+          variant="outlined"
           danger
           type="text"
           icon={<Trash2 size={16} />}
@@ -75,6 +81,17 @@ export default function DeckDetailPage() {
           删除卡组
         </Button>
       </div>
+
+      <Button
+        variant="outlined"
+        type="text"
+        icon={<ArrowLeft size={18} />}
+        onClick={() => navigate('/deck')}
+        style={{ marginBottom: 16 }}
+      >
+        返回卡组列表
+      </Button>
+
       <DeckDetailEditor deckId={deckId} />
     </div>
   )

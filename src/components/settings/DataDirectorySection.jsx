@@ -7,7 +7,7 @@ import { openConfirmModal } from '../../utils/openConfirmModal'
 /**
  * 用户数据根目录：展示路径、在资源管理器中打开、迁移到其他文件夹、恢复默认。
  */
-export default function DataDirectorySection({ electron, embedInPanel = false }) {
+export default function DataDirectorySection({ electron, embedInPanel = false, hideLabel = false }) {
   const [info, setInfo] = useState(null)
   const [busy, setBusy] = useState(false)
 
@@ -135,7 +135,7 @@ export default function DataDirectorySection({ electron, embedInPanel = false })
 
   const panelBody = (
     <div className="settings-data-block">
-      <div className="settings-item settings-data-head-row">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
         <div className="settings-label-with-help">
           <label className="settings-label" htmlFor="settings-data-path-trigger">
             用户数据目录

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Block, Button, SearchBar } from '@lobehub/ui'
-import { Delete, Edit3 } from 'lucide-react'
+import { Search, Delete, Edit3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import CardPreview from '../../components/card-preview'
 import useCardStore from '../../store/useStore'
@@ -43,6 +43,12 @@ export default function CardBrowser() {
   return (
     <div className="card-browser">
       <div className="card-browser-main">
+        <div className="page-header">
+          <h1 className="page-title">
+            <Search size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            卡牌浏览
+          </h1>
+        </div>
         <div className="browser-search">
           <SearchBar
             value={searchTerm}
