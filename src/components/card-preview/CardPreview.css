@@ -1,0 +1,17 @@
+.card-preview {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.card-preview-canvas {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 813 / 1185;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-card-art-matte);
+  vertical-align: top;
+}

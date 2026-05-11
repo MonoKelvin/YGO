@@ -4,15 +4,18 @@
   "description": "游戏王卡牌生成器",
   "main": "electron/main.cjs",
   "scripts": {
-    "renderer:dev": "vite --port 5173",
-    "desktop:dev": "concurrently -k \"npm run renderer:dev\" \"npm run electron:wait\"",
-    "electron:wait": "wait-on http-get://localhost:5173 http-get://localhost:5174 http-get://localhost:5175 http-get://localhost:5176 http-get://localhost:5177 http-get://localhost:5178 http-get://localhost:5179 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
-    "desktop:dev:renderer": "npm run renderer:dev",
+    "vite:dev": "vite",
+    "electron:dev": "wait-on tcp:127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "dev": "concurrently -k -n \"vite,electron\" -c \"cyan,magenta\" \"npm run vite:dev\" \"npm run electron:dev\"",
+    "desktop:dev": "npm run dev",
+    "renderer:dev": "npm run vite:dev",
     "build": "vite build && node copy-assets.js",
     "desktop:build": "npm run build && electron-builder",
     "desktop:pack": "npm run build && electron-builder --dir",
-    "start": "npm run desktop:dev",
-    "dev": "npm run desktop:dev"
+    "start": "npm run dev",
+    "mold:check": "node scripts/mold-check.mjs",
+    "cards:fetch": "node scripts/fetch-ygoprodeck.mjs",
+    "cards:fetch:images": "node scripts/fetch-ygoprodeck.mjs --images"
   },
   "keywords": [
     "electron",
@@ -23,15 +26,23 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@lobehub/ui": "^1.170.8",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@lobehub/fluent-emoji": "^4.1.0",
+    "@lobehub/icons": "^5.8.0",
+    "@lobehub/ui": "^5.10.2",
+    "antd": "^6.3.7",
+    "lucide-react": "^0.484.0",
+    "motion": "^12.38.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^6.22.3",
+    "remark-gfm": "^4.0.1",
+    "sql.js": "^1.14.1",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@types/react": "^18.2.64",
-    "@types/react-dom": "^18.2.21",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
@@ -49,20 +60,29 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "package.json",
+      "node_modules/sql.js/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/sql.js/**/*"
     ],
     "extraResources": [
       {
         "from": "src/assets",
         "to": "assets",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "signAndEditExecutable": false,

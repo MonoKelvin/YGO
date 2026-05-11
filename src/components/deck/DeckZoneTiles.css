@@ -1,0 +1,69 @@
+/**
+ * 卡组构成：仅尺寸与排版；不覆盖主题色与圆角动画。
+ */
+.deck-zone-card-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-content: flex-start;
+  min-height: 72px;
+  padding: var(--spacing-xs) 0 var(--spacing-md);
+}
+
+.deck-zone-tile {
+  position: relative;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: 56px;
+  aspect-ratio: 59 / 86;
+  box-sizing: border-box;
+}
+
+.deck-zone-tile.is-selected {
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.55);
+}
+
+.deck-zone-tile-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+  vertical-align: top;
+}
+
+.deck-zone-tile-fav {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+
+.deck-zone-hint-keys {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+}
+
+.deck-zone-empty {
+  margin: 0;
+  padding: var(--spacing-md) 0;
+  font-size: var(--font-size-sm);
+}
+
+.deck-batch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}

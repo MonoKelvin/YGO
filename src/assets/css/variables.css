@@ -1,12 +1,38 @@
+/**
+ * 应用设计令牌：浅色在 :root，深色在 [data-theme='dark']（由 useAppTheme 写入 html）。
+ * 业务 CSS 优先使用本文件中的 var(--*)；色值与间距集中在此维护。
+ * 与 @lobehub/ui ThemeProvider（createLobeAntdTheme）主色体系对齐。
+ */
+
+/** 游戏王 Mold 卡名字体，用于应用内「YGO」品牌字（与卡牌画布卡名同源） */
+@font-face {
+  font-family: 'YgoEnName';
+  src: url('../Mold/Font/en_name.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --color-primary: #3b82f6;
-  --color-primary-hover: #60a5fa;
+  /** 与 @lobehub/ui ThemeProvider customTheme primaryColor: blue 同系（略偏青的主色） */
+  --color-primary: #159ab0;
+  --color-primary-hover: #47b3ca;
   --color-bg-secondary: #ffffff;
   --color-bg-tertiary: #f3f4f6;
   --color-bg-primary: #f9fafb;
+  /** 浮层、下拉、Ant Design 弹出层：与 antd colorBgElevated 一致 */
+  --color-bg-elevated: #ffffff;
+  /** 大标题：品牌显示字体 + 中文清晰可读 */
+  --font-display: 'YgoEnName', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    system-ui, sans-serif;
+  /** 侧栏/标题栏「YGO」专用（字距略紧，避免字母间距过大） */
+  --font-ygo-brand: 'YgoEnName', 'Segoe UI', system-ui, sans-serif;
+  --color-ygo-brand: #312e81;
   --color-text-primary: #111827;
   --color-text-secondary: #4b5563;
   --color-text-muted: #9ca3af;
+  /** 介于 secondary / muted 之间（侧栏小标题等） */
+  --color-text-tertiary: #94a3b8;
   --color-border: #e5e7eb;
   --color-border-subtle: #f3f4f6;
   --color-border-light: #e5e7eb;
@@ -19,18 +45,24 @@
   --font-size-lg: 16px;
   --font-size-xl: 18px;
   --font-size-2xl: 20px;
+  /** 少数页面大标题（详情页卡名等） */
+  --font-size-xxl: 22px;
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
+  --spacing-hair: 2px;
   --spacing-xs: 4px;
+  /** 介于 xs/sm，用于紧凑列表行距等 */
+  --spacing-2xs: 6px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 24px;
   --spacing-2xl: 32px;
+  --spacing-xxl: 40px;
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -45,6 +77,340 @@
   --transition-fast: 0.15s ease;
   --transition-normal: 0.2s ease;
   --transition-slow: 0.3s ease;
+  /** 侧栏导航：主题色淡化背景（与 --color-primary 配套） */
+  --nav-item-hover-bg: color-mix(in srgb, var(--color-primary) 11%, transparent);
+  --nav-item-selected-bg: color-mix(in srgb, var(--color-primary) 17%, transparent);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /** 链接与 Ant Design primary 对齐，勿再写死 #1677ff */
+  --color-link: var(--color-primary);
+
+  /** 实心主按钮、主色条上的前景色 */
+  --color-on-primary: #ffffff;
+  /** 叠在深色遮罩 / 照片上的文字（如卡组封面标题） */
+  --color-text-on-image: #ffffff;
+
+  /** 语义错误（表单校验、错误块） */
+  --color-error: #b91c1c;
+
+  /** 收藏心形等强调（与主色区分） */
+  --color-favorite: #e11d48;
+
+  /**
+   * 叠在卡图/照片底部的暗角（与页面明暗无关，保证白字对比度）
+   */
+  --color-photo-scrim: #0f172a;
+
+  /** 主色半透明描边（折叠面板、次要按钮 hover） */
+  --control-border-primary: color-mix(
+    in srgb,
+    var(--color-primary) 28%,
+    transparent
+  );
+  --control-border-primary-strong: color-mix(
+    in srgb,
+    var(--color-primary) 38%,
+    transparent
+  );
+
+  /** 浮动控件（如规则百科「回顶」） */
+  --color-surface-floating: color-mix(
+    in srgb,
+    var(--color-bg-secondary) 92%,
+    transparent
+  );
+  --shadow-floating:
+    0 4px 18px color-mix(in srgb, var(--color-text-primary) 12%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-text-primary) 4%, transparent);
+  --shadow-primary-hover:
+    0 8px 24px color-mix(in srgb, var(--color-primary) 28%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+
+  /** 卡片 / 详情大块投影 */
+  --shadow-elevated-soft: 0 8px 28px
+    color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+
+  /** 图片底部渐变遮罩（卡组货架封面） */
+  --gradient-image-overlay-bottom: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-photo-scrim) 82%, transparent) 0%,
+    color-mix(in srgb, var(--color-photo-scrim) 35%, transparent) 55%,
+    transparent 100%
+  );
+
+  /** 侧栏底部 tint、折叠钉按钮灰度（随主题语义色推导） */
+  --sider-footer-tint: color-mix(in srgb, var(--color-ygo-brand) 8%, transparent);
+  --sider-pin-muted: color-mix(in srgb, var(--color-text-muted) 55%, transparent);
+  --sider-pin-hover: color-mix(in srgb, var(--color-text-secondary) 85%, transparent);
+
+  /** dev 构建角标（浅色为准；深色在 [data-theme='dark'] 覆盖） */
+  --badge-dev-fg: #9a3412;
+  --badge-dev-bg: #ffedd5;
+  --badge-dev-ring: color-mix(in srgb, #fb923c 35%, transparent);
+
+  /** Windows 标题栏关闭钮 hover（系统惯例色，一般不随品牌色变） */
+  --color-window-close-hover: #e81123;
+
+  /** 卡牌画布占位衬底（印刷安全区外的_mat） */
+  --color-card-art-matte: #0a0a0a;
+
+  /** 与固定顶栏占位一致的滚动锚点（规则百科 scroll-margin） */
+  --layout-sticky-offset: 88px;
+
+  /** 与 Ant Design small control / 表格行高对齐 */
+  --control-height-sm: 32px;
+  --control-height-md: 40px;
+  --control-gap-sm: 10px;
+  --control-textarea-min-height: 120px;
+
+  /**
+   * 滚动条：WinUI 式圆角滑块 + 与槽同宽的方形箭头按钮（箭头三角用圆角描边模拟）
+   */
+  --scrollbar-width: 8px;
+  --scrollbar-width-wide: 12px;
+  /** 滑块「胶囊」圆角 */
+  --scrollbar-thumb-radius: calc(var(--scrollbar-width) / 2);
+  --scrollbar-thumb-radius-wide: calc(var(--scrollbar-width-wide) / 2);
+  /** 轨道衬底圆角（竖条左右两侧） */
+  --scrollbar-track-radius: var(--radius-sm);
+  /** 箭头按钮与外缘相接的一角大圆角、与滑块相邻的一角小圆角 */
+  --scrollbar-btn-radius-outer: 5px;
+  --scrollbar-btn-radius-inner: 2px;
+  --scrollbar-track-bg: color-mix(in srgb, var(--color-border) 35%, transparent);
+  --scrollbar-thumb-bg: color-mix(in srgb, var(--color-border) 92%, var(--color-text-muted));
+  --scrollbar-thumb-bg-hover: color-mix(in srgb, var(--color-text-muted) 88%, var(--color-border));
+  --scrollbar-button-bg: color-mix(in srgb, var(--color-bg-secondary) 94%, var(--color-border));
+  --scrollbar-button-bg-hover: color-mix(in srgb, var(--color-border) 55%, transparent);
+
+  --page-title-accent-width: 48px;
+  --page-title-accent-height: 3px;
+
+  /** 规则百科窄屏下资料列表区域最大高度 */
+  --rules-wiki-rail-chunk-max-h: 160px;
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white)) {
+  :root {
+    --nav-item-hover-bg: rgba(21, 154, 176, 0.1);
+    --nav-item-selected-bg: rgba(21, 154, 176, 0.16);
+  }
+}
+
+/** 深色：与 html[data-theme='dark'] 联动（useAppTheme 写入 documentElement） */
+[data-theme='dark'] {
+  /** 规则百科正文：分隔线（hr、表格线、章节虚线）比 border-subtle 再弱一档，避免「白条」刺眼 */
+  --rules-wiki-line: rgba(255, 255, 255, 0.065);
+  --rules-wiki-line-faint: rgba(255, 255, 255, 0.045);
+
+  /** Lobe blue 深色档偏亮的主色，与 antd-style 深色档一致 */
+  --color-primary: #6acde4;
+  --color-primary-hover: #8ae8ff;
+  --color-bg-secondary: #1a1b21;
+  --color-bg-tertiary: #262730;
+  --color-bg-primary: #12141a;
+  --color-bg-elevated: #262730;
+  --color-ygo-brand: #a5b4fc;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-text-muted: #9ca3af;
+  --color-text-tertiary: #94a3b8;
+  --color-border: #3f4450;
+  --color-border-subtle: #2a2d36;
+  --color-border-light: #3f4450;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
+
+  --nav-item-hover-bg: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  --nav-item-selected-bg: color-mix(in srgb, var(--color-primary) 24%, transparent);
+
+  --color-error: #f87171;
+  --color-favorite: #fb7185;
+
+  --control-border-primary: color-mix(
+    in srgb,
+    var(--color-primary) 28%,
+    transparent
+  );
+  --control-border-primary-strong: color-mix(
+    in srgb,
+    var(--color-primary) 38%,
+    transparent
+  );
+
+  --color-surface-floating: color-mix(
+    in srgb,
+    var(--color-bg-tertiary) 88%,
+    transparent
+  );
+  --shadow-floating:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-primary-hover:
+    0 8px 24px color-mix(in srgb, var(--color-primary) 35%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+
+  --shadow-elevated-soft: 0 8px 28px rgba(0, 0, 0, 0.5);
+
+  --sider-footer-tint: color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+  --badge-dev-fg: #fdba74;
+  --badge-dev-bg: rgba(234, 88, 12, 0.22);
+  --badge-dev-ring: color-mix(in srgb, #fb923c 28%, transparent);
+
+  --scrollbar-track-bg: color-mix(in srgb, var(--color-border-subtle) 85%, transparent);
+  --scrollbar-thumb-bg: color-mix(in srgb, var(--color-text-muted) 38%, transparent);
+  --scrollbar-thumb-bg-hover: color-mix(in srgb, var(--color-text-secondary) 42%, transparent);
+  --scrollbar-button-bg: color-mix(in srgb, var(--color-bg-secondary) 92%, var(--color-border-subtle));
+  --scrollbar-button-bg-hover: color-mix(in srgb, var(--color-text-muted) 22%, transparent);
+}
+
+@supports not (color: color-mix(in srgb, black 50%, white)) {
+  [data-theme='dark'] {
+    --nav-item-hover-bg: rgba(96, 165, 250, 0.14);
+    --nav-item-selected-bg: rgba(96, 165, 250, 0.22);
+  }
+}
+
+/** 勿用 opacity:0 作首帧 + fill-mode:both，首屏会整区透明似「白屏」 */
+@keyframes app-route-enter {
+  from {
+    transform: translateY(3px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/** Ant Design 下拉在深色下勿残留浅色面板底色（token 未覆盖的边角） */
+[data-theme='dark'] .ant-select-dropdown {
+  background: var(--color-bg-elevated) !important;
+}
+
+[data-theme='dark'] .ant-select-dropdown .rc-virtual-list-holder-inner .ant-select-item {
+  color: var(--color-text-primary);
+}
+
+/**
+ * Dropdown 右键菜单等浮层：浅色/深色均需实心底色（否则与 Lobehub/antd-style 叠加会透出下层）
+ */
+.ant-dropdown .ant-dropdown-menu,
+.ant-dropdown-menu-submenu-popup > .ant-dropdown-menu {
+  background: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xl) !important;
+  /** 内边距略加大，大圆角条目才不贴边裁切 */
+  padding: var(--spacing-sm);
+}
+
+.ant-dropdown-menu-item,
+.ant-dropdown-menu-submenu-title {
+  color: var(--color-text-primary);
+  /** 比外层略「满」的圆角块，与面板成套 */
+  border-radius: var(--radius-xl);
+}
+
+.ant-dropdown-menu-submenu .ant-dropdown-menu-item {
+  border-radius: var(--radius-xl);
+}
+
+.ant-dropdown-menu-item-group-title {
+  border-radius: var(--radius-lg);
+}
+
+/** Select / 其他浮层与下拉菜单圆角一致 */
+.ant-select-dropdown {
+  border-radius: var(--radius-xl) !important;
+}
+
+.ant-popover .ant-popover-inner {
+  border-radius: var(--radius-lg) !important;
+}
+
+.ant-tooltip .ant-tooltip-inner {
+  border-radius: var(--radius-md) !important;
+}
+
+.ant-dropdown-menu-item-danger {
+  color: var(--color-error) !important;
+}
+
+/** 危险项 hover / 激活：红底上文字与图标应为浅色（覆盖 Lobehub/antd 残留的红色字） */
+.ant-dropdown-menu-item-danger:hover,
+.ant-dropdown-menu-item-danger.ant-dropdown-menu-item-active,
+.ant-dropdown-menu-item.ant-dropdown-menu-item-danger:hover {
+  color: #fff !important;
+  background-color: var(--color-error) !important;
+}
+
+.ant-dropdown-menu-item-danger:hover .ant-dropdown-menu-title-content,
+.ant-dropdown-menu-item-danger:hover svg,
+.ant-dropdown-menu-item.ant-dropdown-menu-item-danger:hover .ant-dropdown-menu-title-content,
+.ant-dropdown-menu-item.ant-dropdown-menu-item-danger:hover svg {
+  color: #fff !important;
+}
+
+/**
+ * Modal / Message / Notification / Popconfirm 等与主题变量对齐（兜底 CSS，避免 portal 层 token 未完全穿透）
+ */
+.ant-modal .ant-modal-content {
+  background: var(--color-bg-elevated);
+}
+
+.ant-modal .ant-modal-header {
+  background: var(--color-bg-elevated);
+  border-bottom-color: var(--color-border-subtle);
+}
+
+.ant-modal .ant-modal-title {
+  color: var(--color-text-primary);
+}
+
+.ant-modal .ant-modal-footer {
+  border-top-color: var(--color-border-subtle);
+}
+
+.ant-modal .ant-modal-close {
+  color: var(--color-text-secondary);
+}
+
+.ant-modal .ant-modal-close:hover {
+  color: var(--color-text-primary);
+}
+
+.ant-message .ant-message-notice-content {
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-text-primary);
+}
+
+.ant-notification .ant-notification-notice {
+  background: var(--color-bg-elevated);
+}
+
+.ant-notification-notice .ant-notification-notice-message,
+.ant-notification-notice .ant-notification-notice-description {
+  color: var(--color-text-primary);
+}
+
+.ant-popconfirm .ant-popover-inner {
+  background: var(--color-bg-elevated);
+}
+
+.ant-popconfirm .ant-popover-inner-content {
+  color: var(--color-text-primary);
+}
+
+.ant-drawer .ant-drawer-content,
+.ant-drawer .ant-drawer-header,
+.ant-drawer .ant-drawer-footer {
+  background: var(--color-bg-elevated);
+}
+
+.ant-drawer .ant-drawer-title {
+  color: var(--color-text-primary);
 }
 
 * {
@@ -59,35 +425,163 @@ html, body, #root {
   overflow: hidden;
 }
 
+/** 让路由所在 Layout 填满视口，避免子页面用 100vh 估算标题栏/侧栏高度 */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+/** StrictMode / Router 等若未撑满高度，内部 .app-layout 会得到 height:auto，双栏 grid 会塌成 0 */
+#root > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#root .app-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
 body {
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bg-primary);
+}
+
+/**
+ * WebKit 滚动条（Electron / Chromium）：圆角轨道 + 胶囊滑块 + 与槽同宽的圆角箭头按钮。
+ * Firefox 仅能通过 scrollbar-color / scrollbar-width 近似配色。
+ */
+html {
+  scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg);
+  scrollbar-width: thin;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
 }
 
-::-webkit-scrollbar-track {
+::-webkit-scrollbar-corner {
   background: transparent;
 }
 
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-bg);
+  border-radius: var(--scrollbar-track-radius);
+}
+
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
+  border-radius: var(--scrollbar-thumb-radius);
+  border: 2px solid transparent;
+  background-color: var(--scrollbar-thumb-bg);
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background-color: var(--scrollbar-thumb-bg-hover);
+}
+
+::-webkit-scrollbar-button:single-button {
+  display: block;
+  background-color: var(--scrollbar-button-bg);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: calc(var(--scrollbar-width) - 2px) calc(var(--scrollbar-width) - 2px);
+}
+
+::-webkit-scrollbar-button:single-button:hover {
+  background-color: var(--scrollbar-button-bg-hover);
+}
+
+::-webkit-scrollbar-button:single-button:vertical:decrement,
+::-webkit-scrollbar-button:vertical:start:decrement {
+  height: var(--scrollbar-width);
+  width: var(--scrollbar-width);
+  border-radius: var(--scrollbar-btn-radius-outer) var(--scrollbar-btn-radius-outer)
+    var(--scrollbar-btn-radius-inner) var(--scrollbar-btn-radius-inner);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M4 10l4-4 4 4'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-button:single-button:vertical:increment,
+::-webkit-scrollbar-button:vertical:end:increment {
+  height: var(--scrollbar-width);
+  width: var(--scrollbar-width);
+  border-radius: var(--scrollbar-btn-radius-inner) var(--scrollbar-btn-radius-inner)
+    var(--scrollbar-btn-radius-outer) var(--scrollbar-btn-radius-outer);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-button:single-button:horizontal:decrement,
+::-webkit-scrollbar-button:horizontal:start:decrement {
+  height: var(--scrollbar-width);
+  width: var(--scrollbar-width);
+  border-radius: var(--scrollbar-btn-radius-outer) var(--scrollbar-btn-radius-inner)
+    var(--scrollbar-btn-radius-inner) var(--scrollbar-btn-radius-outer);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M10 4L6 8l4 4'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-button:single-button:horizontal:increment,
+::-webkit-scrollbar-button:horizontal:end:increment {
+  height: var(--scrollbar-width);
+  width: var(--scrollbar-width);
+  border-radius: var(--scrollbar-btn-radius-inner) var(--scrollbar-btn-radius-outer)
+    var(--scrollbar-btn-radius-outer) var(--scrollbar-btn-radius-inner);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M6 4l4 4-4 4'/%3E%3C/svg%3E");
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-button:single-button:vertical:decrement,
+[data-theme='dark'] ::-webkit-scrollbar-button:vertical:start:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23cbd5e1' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M4 10l4-4 4 4'/%3E%3C/svg%3E");
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-button:single-button:vertical:increment,
+[data-theme='dark'] ::-webkit-scrollbar-button:vertical:end:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23cbd5e1' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-button:single-button:horizontal:decrement,
+[data-theme='dark'] ::-webkit-scrollbar-button:horizontal:start:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23cbd5e1' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M10 4L6 8l4 4'/%3E%3C/svg%3E");
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-button:single-button:horizontal:increment,
+[data-theme='dark'] ::-webkit-scrollbar-button:horizontal:end:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23cbd5e1' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round' d='M6 4l4 4-4 4'/%3E%3C/svg%3E");
 }
 
 .page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  position: relative;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
   margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--page-title-accent-width);
+  height: var(--page-title-accent-height);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary);
+  opacity: 0.9;
 }
 
 .section-title {
@@ -100,22 +594,6 @@ body {
   display: block;
   margin-bottom: var(--spacing-sm);
   font-weight: var(--font-weight-medium);
-}
-
-.textarea {
-  width: 100%;
-  height: 120px;
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  font-size: var(--font-size-md);
-  font-family: inherit;
-  resize: vertical;
-}
-
-.textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
 }
 
 .upload-label {
@@ -132,4 +610,14 @@ body {
 .upload-label:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+@keyframes ygo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ygo-spin {
+  animation: ygo-spin 0.85s linear infinite;
 }

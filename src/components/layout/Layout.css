@@ -1,0 +1,281 @@
+.app-layout {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/**
+ * 主工作区：须占满标题栏下剩余高度
+ * 使用 .app-main-shell 提高选择器特异性，避免误伤内部嵌套的 .ant-layout
+ */
+.app-layout > .ant-layout.app-main-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.app-main-shell {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: stretch;
+  /* 与 antd 一致：带 Sider 时横向排布（避免被其他全局样式影响） */
+  flex-direction: row;
+}
+
+.app-main-shell > .ant-layout-sider {
+  align-self: stretch;
+  flex: 0 0 auto;
+}
+
+/** 侧栏与主列同高；自身也作 flex 列，保证子级 height:100% 能撑满 */
+.app-main-shell > .ant-layout-sider.app-sider {
+  flex-shrink: 0 !important;
+  align-self: stretch !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/**
+ * 主内容列：必须配合 antd「has-sider 子项 width:0 + flex」吸收侧栏宽度变化。
+ * 使用 flex-basis:0%（勿用 auto），否则折叠侧栏时主列不会吃掉释放的宽度。
+ */
+.app-main-shell > .app-main-inner.ant-layout {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+
+.app-main-inner {
+  min-width: 0;
+}
+
+/** 内层 Layout：纵向铺满 shell，把明确高度传给 main.app-content（flex 链须带 min-height:0） */
+.app-main-inner.ant-layout {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  height: 100%;
+  max-height: 100%;
+}
+
+.app-main-inner > main.app-content {
+  flex: 1 1 0% !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.app-sider {
+  background-color: var(--color-bg-secondary) !important;
+  border-right: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.app-sider.ant-layout-sider {
+  min-height: 0 !important;
+}
+
+.app-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-logo-row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--spacing-md) var(--spacing-sm);
+}
+
+.app-sider.ant-layout-sider-collapsed .logo-text {
+  display: none;
+}
+
+.app-sider.ant-layout-sider-collapsed .app-logo-row {
+  justify-content: center;
+  padding-left: var(--spacing-xs);
+  padding-right: var(--spacing-xs);
+}
+
+.logo-text {
+  font-family: var(--font-ygo-brand);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-ygo-brand);
+}
+
+.sider-pin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--sider-pin-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.sider-pin-btn:hover {
+  color: var(--sider-pin-hover);
+  background: var(--color-bg-tertiary);
+}
+
+/**
+ * 主导航贴顶、底部设置贴底，中间弹性占位（弹簧）吸收剩余高度。
+ * 主导航不再使用 flex:1 + overflow，避免与 antd Menu 选中态高度联动导致整栏抖动。
+ */
+.sider-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sider-nav-primary {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.sider-nav-spacer {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.main-menu,
+.settings-menu {
+  border-inline-end: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  flex: 0 0 auto;
+}
+
+/** 与 Sider 的 inlineCollapsed 一致，避免窄栏下列标题换行把侧栏撑破 */
+.sider-nav-primary .ant-menu,
+.sider-footer .ant-menu {
+  max-width: 100%;
+}
+
+/** 侧栏导航：主题色选中 / 悬停 + 轻过渡 */
+.app-sider .ant-menu.ant-menu-root .ant-menu-item {
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  margin-block: 3px !important;
+  margin-inline: 6px !important;
+  width: calc(100% - 12px) !important;
+  padding-inline: 12px !important;
+  transition:
+    background-color 0.22s var(--ease-out-soft, cubic-bezier(0.22, 1, 0.36, 1)),
+    color 0.22s var(--ease-out-soft, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.app-sider .ant-menu.ant-menu-root .ant-menu-item:not(.ant-menu-item-selected):hover {
+  background-color: var(--nav-item-hover-bg) !important;
+}
+
+.app-sider .ant-menu.ant-menu-root .ant-menu-item-selected {
+  background-color: var(--nav-item-selected-bg) !important;
+  color: var(--color-primary) !important;
+  font-weight: 600;
+}
+
+.app-sider .ant-menu.ant-menu-root .ant-menu-item-selected svg {
+  color: var(--color-primary);
+}
+
+/** 折叠为图标模式：解除自定义宽度并居中，图标垂直对齐（antd inlineCollapsed + 本导航自定义 margin/width 叠加会偏移） */
+.app-sider.ant-layout-sider-collapsed .main-menu.ant-menu-inline-collapsed .ant-menu-item,
+.app-sider.ant-layout-sider-collapsed .settings-menu.ant-menu-inline-collapsed .ant-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  margin-inline: auto !important;
+  margin-block: 6px !important;
+  padding-inline: 0 !important;
+}
+
+.app-sider.ant-layout-sider-collapsed .main-menu.ant-menu-inline-collapsed .ant-menu-item-icon,
+.app-sider.ant-layout-sider-collapsed .settings-menu.ant-menu-inline-collapsed .ant-menu-item-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.sider-footer {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  padding-top: var(--spacing-sm);
+  padding-bottom: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  /** 与主导航同一底色（勿单独加深，否则设置项像「另一块补丁」） */
+  background-color: var(--color-bg-secondary);
+}
+
+.app-content {
+  display: flex;
+  flex-direction: column;
+  /** 略加大内边距，避免按钮 focus / 阴影贴边被父级 overflow 裁切 */
+  padding: calc(var(--spacing-xl) + 4px) calc(var(--spacing-xl) + 6px);
+  background-color: var(--color-bg-primary);
+  /** 主滚动视口：横向裁切避免宽表格撑出侧栏；纵向仅此一处滚动，子页 min-height:0 链才能嵌套表格区滚动 */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/** 路由懒加载占位（规则百科等） */
+.app-route-suspense {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(320px, 50vh);
+  padding: var(--spacing-xl);
+}
+
+/**
+ * 路由根节点：默认随内容增高，由 .app-content 滚动；
+ * flex:1 + min-height:0 让需要「内部表格滚动」的页面（卡牌库等）可压在视口高度内。
+ */
+.app-content > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-content > * {
+    animation: app-route-enter 0.42s var(--ease-out-soft, cubic-bezier(0.22, 1, 0.36, 1))
+      forwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-content > * {
+    animation: none !important;
+  }
+}

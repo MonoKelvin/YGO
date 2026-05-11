@@ -1,0 +1,180 @@
+/**
+ * 仅布局与间距；配色、圆角、动效交给 Lobe / antd token。
+ */
+.deck-list-page {
+  width: 100%;
+  max-width: min(1100px, 100%);
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.deck-list-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+}
+
+.deck-list-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.deck-list-title {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.deck-list-title-icon {
+  flex-shrink: 0;
+}
+
+.deck-list-lead {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  max-width: 560px;
+}
+
+.deck-list-empty-state {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  min-height: min(420px, calc(100vh - 220px));
+  padding: var(--spacing-xxl) var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.deck-list-empty-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.deck-list-empty-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.deck-list-empty-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.deck-list-empty-hint {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  max-width: 320px;
+}
+
+.deck-shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.deck-shelf-dropdown-trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.deck-shelf-card {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  display: block;
+  width: 100%;
+}
+
+.deck-shelf-cover-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 59 / 86;
+  overflow: hidden;
+}
+
+.deck-shelf-pin-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  color: #fff;
+}
+
+.deck-shelf-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+  display: block;
+}
+
+.deck-shelf-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+/** 叠在封面底部：毛玻璃条 + 卡组名 */
+.deck-shelf-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  text-align: center;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.deck-shelf-name {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
