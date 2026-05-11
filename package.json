@@ -24,7 +24,7 @@
     "card-generator"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@lobehub/fluent-emoji": "^4.1.0",
     "@lobehub/icons": "^5.8.0",

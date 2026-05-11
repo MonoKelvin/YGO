@@ -148,4 +148,4 @@ YGO/
 
 ## 许可证
 
-ISC（见 `package.json`）
+[MIT](LICENSE)（与 `package.json` 中 `license` 字段一致）
