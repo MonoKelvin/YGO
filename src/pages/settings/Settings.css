@@ -191,6 +191,23 @@
   gap: 4px;
 }
 
+/** 关于：外链主色（与 ThemeProvider customTheme.primaryColor 一致） */
+.settings-page .settings-about-link {
+  color: var(--ant-color-primary, var(--lobe-color-primary)) !important;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.settings-page .settings-about-link:hover {
+  color: var(--ant-color-primary-hover, var(--lobe-color-primary-hover, var(--lobe-color-primary))) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.settings-page .settings-about-link:active {
+  color: var(--ant-color-primary-active, var(--lobe-color-primary-active, var(--lobe-color-primary))) !important;
+}
+
 .about-ai-tools-hint {
   margin: var(--spacing-sm) 0 0;
   font-size: var(--font-size-xs);
@@ -243,12 +260,6 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  text-decoration: none;
-  color: var(--color-primary);
-}
-
-.about-link:hover {
-  text-decoration: underline;
 }
 
 .about-code {

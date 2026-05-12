@@ -248,12 +248,13 @@ export function paintCard(ctx, card, assets = {}) {
   ctx.fillText(drawName, z.name.x, z.name.y)
   ctx.restore()
 
-  if (cardType === 'monster' && !z.isLink) {
+  if (cardType === 'monster' && !z.isLink && Number(card.level) > 0) {
     drawLevelStarsYgo(ctx, card.level, z, assets.starIconImg)
   }
 
   const attrR = z.attrR
-  if (assets.attrImg && assets.attrImg.complete && assets.attrImg.naturalWidth) {
+  const hasAttribute = card.attribute && card.attribute.trim()
+  if (hasAttribute && assets.attrImg && assets.attrImg.complete && assets.attrImg.naturalWidth) {
     ctx.save()
     ctx.beginPath()
     ctx.arc(z.attrCx, z.attrCy, attrR, 0, Math.PI * 2)
@@ -271,11 +272,11 @@ export function paintCard(ctx, card, assets = {}) {
     ctx.beginPath()
     ctx.arc(z.attrCx, z.attrCy, attrR, 0, Math.PI * 2)
     ctx.stroke()
-  } else {
+  } else if (hasAttribute) {
     drawAttributeFallback(
       ctx,
       cardType,
-      card.attribute || 'earth',
+      card.attribute,
       z.attrCx,
       z.attrCy,
       attrR,
@@ -310,22 +311,32 @@ export function paintCard(ctx, card, assets = {}) {
   ctx.textBaseline = 'middle'
   let typeText = ''
   if (cardType === 'monster') {
-    ctx.font = `${Math.round(26 * z.r)}px ${fontName}`
-    const race = (card.race || '???').replace(/族$/, '') + '族'
-    const catLabel = labelFromOptions(MONSTER_CATEGORIES, card.monsterCategory || 'effect')
-    typeText = `「${race}／${catLabel}」`
-    ctx.textAlign = 'left'
-    ctx.fillText(typeText, z.raceLine.x, z.raceLine.y)
+    const hasRace = card.race && card.race.trim()
+    const hasCat = card.monsterCategory && card.monsterCategory.trim()
+    if (hasRace || hasCat) {
+      ctx.font = `${Math.round(26 * z.r)}px ${fontName}`
+      const race = hasRace ? (card.race.replace(/族$/, '') + '族') : ''
+      const catLabel = hasCat ? labelFromOptions(MONSTER_CATEGORIES, card.monsterCategory) : ''
+      typeText = `「${race}${hasRace && hasCat ? '／' : ''}${catLabel}」`
+      ctx.textAlign = 'left'
+      ctx.fillText(typeText, z.raceLine.x, z.raceLine.y)
+    }
   } else if (cardType === 'spell') {
-    ctx.font = `${Math.round(48 * z.r)}px ${fontName}`
-    typeText = `「${labelFromOptions(SPELL_CARD_TYPES, card.spellType || 'normal')}」`
-    ctx.textAlign = 'right'
-    ctx.fillText(typeText, z.spellTypeLine.x, z.spellTypeLine.y)
+    const hasSpellType = card.spellType && card.spellType.trim()
+    if (hasSpellType) {
+      ctx.font = `${Math.round(48 * z.r)}px ${fontName}`
+      typeText = `「${labelFromOptions(SPELL_CARD_TYPES, card.spellType)}」`
+      ctx.textAlign = 'right'
+      ctx.fillText(typeText, z.spellTypeLine.x, z.spellTypeLine.y)
+    }
   } else {
-    ctx.font = `${Math.round(48 * z.r)}px ${fontName}`
-    typeText = `「${labelFromOptions(TRAP_CARD_TYPES, card.trapType || 'normal')}」`
-    ctx.textAlign = 'right'
-    ctx.fillText(typeText, z.spellTypeLine.x, z.spellTypeLine.y)
+    const hasTrapType = card.trapType && card.trapType.trim()
+    if (hasTrapType) {
+      ctx.font = `${Math.round(48 * z.r)}px ${fontName}`
+      typeText = `「${labelFromOptions(TRAP_CARD_TYPES, card.trapType)}」`
+      ctx.textAlign = 'right'
+      ctx.fillText(typeText, z.spellTypeLine.x, z.spellTypeLine.y)
+    }
   }
 
   const bodyText = card.effect || card.description || ''
@@ -381,57 +392,65 @@ export function paintCard(ctx, card, assets = {}) {
   }
 
   if (cardType === 'monster') {
-    ctx.strokeStyle = '#333'
-    ctx.lineWidth = 2 * z.r
-    ctx.beginPath()
-    ctx.moveTo(z.lineUnderStats.x, z.lineUnderStats.y)
-    ctx.lineTo(z.lineUnderStats.x + z.lineUnderStats.w, z.lineUnderStats.y)
-    ctx.stroke()
-
-    ctx.font = `bold ${Math.round(36 * z.r)}px ${fontName}`
-    ctx.textBaseline = 'middle'
-    ctx.textAlign = 'right'
     const atkInfinite = Boolean(card.attackInfinite)
-    const atkStr = atkInfinite ? '\u221e' : `${Math.min(9999, Math.max(0, Number(card.attack) || 0))}`
-    ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
-    ctx.fillText(atkStr, z.atk.x, z.atk.y, z.atk.maxWidth)
-    ctx.textAlign = 'left'
-    ctx.fillText('ATK/', z.atk.labelX, z.atk.labelY)
+    const defInfinite = Boolean(card.defenseInfinite)
+    const hasAtk = atkInfinite || Number(card.attack) > 0
+    const hasDef = defInfinite || Number(card.defense) > 0
 
-    if (z.isLink) {
-      const linkNum =
-        Number(card.linkRating) > 0
-          ? Number(card.linkRating)
-          : Math.min(8, Number(card.level) || 1)
-      ctx.textAlign = 'right'
-      ctx.fillText(`${linkNum}`, z.linkDef.x, z.linkDef.y, z.linkDef.maxWidth)
-      ctx.textAlign = 'left'
-      ctx.fillText('LINK-', z.linkDef.linkLabelX, z.linkDef.linkLabelY)
-    } else {
-      const defInfinite = Boolean(card.defenseInfinite)
-      const defStr = defInfinite ? '\u221e' : `${Math.min(9999, Math.max(0, Number(card.defense) || 0))}`
-      ctx.textAlign = 'right'
-      ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
-      ctx.fillText(defStr, z.def.x, z.def.y, z.def.maxWidth)
-      ctx.textAlign = 'left'
-      ctx.fillText('DEF/', z.def.labelX, z.def.labelY)
+    if (hasAtk || hasDef) {
+      ctx.strokeStyle = '#333'
+      ctx.lineWidth = 2 * z.r
+      ctx.beginPath()
+      ctx.moveTo(z.lineUnderStats.x, z.lineUnderStats.y)
+      ctx.lineTo(z.lineUnderStats.x + z.lineUnderStats.w, z.lineUnderStats.y)
+      ctx.stroke()
+
+      ctx.font = `bold ${Math.round(36 * z.r)}px ${fontName}`
+      ctx.textBaseline = 'middle'
+
+      if (hasAtk) {
+        const atkStr = atkInfinite ? '\u221e' : `${Math.min(9999, Math.max(0, Number(card.attack) || 0))}`
+        ctx.textAlign = 'right'
+        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
+        ctx.fillText(atkStr, z.atk.x, z.atk.y, z.atk.maxWidth)
+        ctx.textAlign = 'left'
+        ctx.fillText('ATK/', z.atk.labelX, z.atk.labelY)
+      }
+
+      if (z.isLink) {
+        const linkNum =
+          Number(card.linkRating) > 0
+            ? Number(card.linkRating)
+            : Math.min(8, Number(card.level) || 1)
+        ctx.textAlign = 'right'
+        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
+        ctx.fillText(`${linkNum}`, z.linkDef.x, z.linkDef.y, z.linkDef.maxWidth)
+        ctx.textAlign = 'left'
+        ctx.fillText('LINK-', z.linkDef.linkLabelX, z.linkDef.linkLabelY)
+      } else if (hasDef) {
+        const defStr = defInfinite ? '\u221e' : `${Math.min(9999, Math.max(0, Number(card.defense) || 0))}`
+        ctx.textAlign = 'right'
+        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
+        ctx.fillText(defStr, z.def.x, z.def.y, z.def.maxWidth)
+        ctx.textAlign = 'left'
+        ctx.fillText('DEF/', z.def.labelX, z.def.labelY)
+      }
     }
   }
 
-  const pwd = String(card.password || '')
-    .replace(/\D/g, '')
-    .slice(0, 8)
-    .padStart(8, '0')
-  ctx.font = `${Math.round(23 * z.r)}px ${fontDesc}`
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = pwdLight ? '#ffffff' : '#6b7280'
-  ctx.fillText(pwd || '00000000', z.password.x, z.password.y)
+  const pwd = String(card.password || '').replace(/\D/g, '').slice(0, 8)
+  if (pwd && pwd.length > 0) {
+    ctx.font = `${Math.round(23 * z.r)}px ${fontDesc}`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = pwdLight ? '#ffffff' : '#6b7280'
+    ctx.fillText(pwd.padStart(8, '0'), z.password.x, z.password.y)
 
-  ctx.fillStyle = pwdLight ? '#e5e7eb' : '#6b7280'
-  ctx.font = `${Math.round(18 * z.r)}px ${fontDesc}`
-  ctx.textAlign = 'right'
-  ctx.fillText('© KONAMI', z.copyright.x, z.copyright.y)
+    ctx.fillStyle = pwdLight ? '#e5e7eb' : '#6b7280'
+    ctx.font = `${Math.round(18 * z.r)}px ${fontDesc}`
+    ctx.textAlign = 'right'
+    ctx.fillText('© KONAMI', z.copyright.x, z.copyright.y)
+  }
 
   ctx.restore()
 }

@@ -139,7 +139,7 @@ export function getYgoLayoutZones(card, canvasW = CARD_W, canvasH = CARD_H) {
   const atk = {
     x: 585 * r,
     y: 1107 * r,
-    maxWidth: 72 * r,
+    maxWidth: 95 * r,
     labelX: 513 * r,
     labelY: 1107 * r,
   }

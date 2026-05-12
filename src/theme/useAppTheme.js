@@ -19,18 +19,42 @@ export function useAppTheme() {
   const electron =
     typeof window !== 'undefined' ? window.electronAPI : undefined
 
-  const [systemAppearance, setSystemAppearance] = useState(() =>
-    getBrowserSystemAppearance(),
-  )
+  const [systemAppearance, setSystemAppearance] = useState(() => {
+    // 在 Electron 环境下，优先使用同步方式获取系统主题
+    if (typeof window !== 'undefined' && window.electronAPI?.getSystemTheme) {
+      try {
+        // 尝试同步获取，虽然 electron.getSystemTheme() 是异步的，但我们可以使用 matchMedia 作为备选
+        const mq = window.matchMedia('(prefers-color-scheme: dark)')
+        const result = mq.matches ? 'dark' : 'light'
+        return result
+      } catch (err) {
+        return getBrowserSystemAppearance()
+      }
+    }
+    return getBrowserSystemAppearance()
+  })
 
   useEffect(() => {
-    if (!electron?.getSystemTheme) return undefined
-    let cancelled = false
-    electron.getSystemTheme().then((t) => {
-      if (!cancelled) setSystemAppearance(t)
-    })
-    return () => {
-      cancelled = true
+    if (electron?.getSystemTheme) {
+      let cancelled = false
+      electron
+        .getSystemTheme()
+        .then((t) => {
+          if (!cancelled && t) {
+            // 确保获取到的主题值是有效的
+            if (t === 'dark' || t === 'light') {
+              setSystemAppearance(t)
+            }
+          }
+        })
+        .catch(() => {
+          // fallback to matchMedia
+        })
+      return () => {
+        cancelled = true
+      }
+    } else {
+      // fallback to matchMedia
     }
   }, [electron])
 

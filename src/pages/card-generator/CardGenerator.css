@@ -1,41 +1,65 @@
 /**
- * 卡牌生成：滚动区内边距（避免滚动条压住表单）、Lobe Form 控件列对齐。
+ * 卡牌生成：仅左侧参数区滚动；Form 控件列对齐；预览栏宽度与留白。
  */
 .card-generator {
   width: 100%;
   max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-/** 与 Form demo 一致：整块表单在滚动区内留白 */
+/** 主内容行：占满剩余高度，避免整页（app-content）随表单变长而外滚 */
+.card-generator-body {
+  min-height: 0;
+}
+
+/** 左侧：工具栏 + ScrollArea 同宽，与下方表单内容左缘对齐 */
+.card-generator-left {
+  min-height: 0;
+}
+
+/** 与 Form demo 一致：表单在滚动区内留白（横向由滚动层统一控制） */
 .card-generator-form {
   box-sizing: border-box;
-  padding: var(--spacing-md);
+  padding: var(--spacing-xs) 0 var(--spacing-sm);
   max-width: 100%;
+}
+
+/** 折叠面板内容区与工具栏左缘对齐（避免 Collapse 默认内边距造成「假对齐」） */
+.card-generator-form .ant-collapse-content-box {
+  padding-inline: 0 !important;
 }
 
 .card-generator-scroll {
   border-radius: var(--radius-md);
+  min-height: 0;
 }
 
-/** ScrollArea 内容层：右侧预留滚动条空间，避免与表单文字/控件重叠 */
+/**
+ * ScrollArea 内容层：右侧预留足够间距，避免正文与滚动条重叠
+ */
 .card-generator-scroll-content {
   gap: 0 !important;
-  padding-inline-end: var(--spacing-md);
-  padding-inline-start: var(--spacing-xs);
   padding-block: var(--spacing-xs);
+  padding-inline-start: 0;
+  padding-inline-end: calc(var(--spacing-md) + 10px);
   box-sizing: border-box;
 }
 
-.card-generator-preview {
-  flex: 0 1 380px !important;
-  width: min(380px, 42vw);
+/** 右侧预览栏：收窄列宽、减少与表单之间的空白 */
+.card-generator-preview-aside {
+  flex: 0 0 268px;
+  width: 268px;
   max-width: 100%;
   align-self: stretch;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 .card-generator-preview-canvas-wrap.card-preview {
   width: 100%;
-  max-width: 350px;
+  max-width: 100%;
+  flex-shrink: 0;
 }
 
 /** 表单项控件列：与 Lobe Form + antd Form.Item 布局对齐 */
@@ -62,6 +86,30 @@
   max-width: 100%;
 }
 
+/**
+ * 效果文本：无标签时占满整行（含原标签列宽度）
+ * Lobe FormItem 始终渲染 label 槽位，用样式收起标签列并拉满控件列。
+ */
+.card-generator-form .card-generator-effect-item .ant-form-item-row {
+  gap: 0;
+}
+
+.card-generator-form .card-generator-effect-item .ant-form-item-label {
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
+}
+
+.card-generator-form .card-generator-effect-item .ant-form-item-control {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 /** 攻击力 / 防御力：数字框拉满，∞ 按钮固定 */
 .card-generator-inline-field {
   width: 100%;
@@ -74,8 +122,102 @@
   min-width: 0;
 }
 
+/** 预览控制按钮组 */
+.card-generator-preview-controls {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.card-generator-preview-controls .ant-btn {
+  border-radius: 0;
+}
+
+.card-generator-preview-controls .ant-btn:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.card-generator-preview-controls .ant-btn:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+/**
+ * 预览占位（隐藏预览时）：外层块级 + aspect-ratio，与 `CardPreview` 内 canvas
+ * 的宽高算法一致；内层绝对定位居中，避免「flex 容器 + aspect-ratio」高度偏矮。
+ */
+div.card-generator-preview-placeholder {
+  align-self: stretch !important;
+  flex-shrink: 0;
+  display: block;
+  position: relative;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0;
+  box-sizing: border-box;
+  aspect-ratio: 813 / 1185;
+  border-radius: var(--radius-md) !important;
+  border: 2px dashed #666 !important;
+  background: var(--lobe-color-bg-elevated) !important;
+  color: #666 !important;
+  /** 与 `.card-preview-canvas` 阴影一致，避免切换时外轮廓跳变 */
+  box-shadow: var(--shadow-lg);
+}
+
+.card-generator-preview-placeholder-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: inherit;
+  box-sizing: border-box;
+}
+
+div.card-generator-preview-placeholder .anticon {
+  color: #666 !important;
+}
+
+/** 暂停刷新叠加层 - 覆盖整个卡牌 */
+.card-generator-preview-paused-wrap {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/** 暗色背景层 */
+.card-generator-preview-paused-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+/** 模糊圆角矩形 */
+.card-generator-preview-paused-blur {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-lg);
+  padding: 24px 32px;
+  background: rgba(128, 128, 128, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  z-index: 1;
+}
+
 @media (max-width: 960px) {
-  .card-generator {
+  .card-generator-body {
     flex-direction: column !important;
   }
 
@@ -83,9 +225,9 @@
     min-height: min(52vh, 480px);
   }
 
-  .card-generator-preview {
+  .card-generator-preview-aside {
     flex: 0 0 auto !important;
     width: 100%;
-    padding-block: var(--spacing-md);
+    padding-block: var(--spacing-sm);
   }
 }

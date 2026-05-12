@@ -1,3 +1,6 @@
+import { DEFAULT_LIBRARY_PAGE_SIZE, normalizeLibraryPageSize } from '../config/librarySettings'
+import { resolveThemePrimaryColor } from '../config/lobePrimaryColor'
+
 /**
  * 从磁盘读回的原始对象中挑出写入 Zustand `settings` 的字段，避免信任未知键。
  */
@@ -18,9 +21,10 @@ export function pickPersistedSettings(raw) {
     out.autoSave = raw.autoSave
   }
 
-  const ps = Number(raw.libraryPageSize)
-  if (Number.isFinite(ps) && ps > 0) {
-    out.libraryPageSize = Math.round(ps)
+  if (raw.libraryPageSize != null && raw.libraryPageSize !== '') {
+    out.libraryPageSize = normalizeLibraryPageSize(raw.libraryPageSize)
+  } else {
+    out.libraryPageSize = DEFAULT_LIBRARY_PAGE_SIZE
   }
 
   if (Array.isArray(raw.favoriteCardIds)) {
@@ -33,6 +37,10 @@ export function pickPersistedSettings(raw) {
 
   if (typeof raw.sidebarCollapsed === 'boolean') {
     out.sidebarCollapsed = raw.sidebarCollapsed
+  }
+
+  if ('primaryColor' in raw) {
+    out.primaryColor = resolveThemePrimaryColor(raw.primaryColor)
   }
 
   return out
