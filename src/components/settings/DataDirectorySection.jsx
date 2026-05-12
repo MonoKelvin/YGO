@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Button, Tooltip, toast } from '@lobehub/ui'
+import { Tooltip, toast, Button } from '@lobehub/ui'
 import { AlertCircle, FolderInput, RotateCcw } from 'lucide-react'
 import useYgoDatabaseStore from '../../store/useYgoDatabaseStore'
 import { openConfirmModal } from '../../utils/openConfirmModal'
@@ -153,6 +153,7 @@ export default function DataDirectorySection({ electron, embedInPanel = false, h
         <div className="settings-data-actions">
           <Button
             size="small"
+            variant="outlined"
             icon={<FolderInput size={14} />}
             onClick={handlePickMigrate}
             disabled={busy}
@@ -162,6 +163,7 @@ export default function DataDirectorySection({ electron, embedInPanel = false, h
           {showResetDefault && (
             <Button
               size="small"
+              variant="outlined"
               icon={<RotateCcw size={14} />}
               onClick={handleResetDefault}
               disabled={busy}

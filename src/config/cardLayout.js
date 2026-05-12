@@ -4,6 +4,23 @@
  */
 export const YGO_MOLD_REF = { w: 813, h: 1185 }
 
+/**
+ * 卡名「视觉宽度」预算：以当前字体下拉丁大写 `M` 的 `measureText` 宽度为 1 单位，
+ * 逐字累计 `measureText(字符)/M` 之和不超过该值（全英文约 16 字，纯中文约 8～10 字，中英混合自动介于其间）。
+ */
+export const CARD_NAME_VISUAL_BUDGET = 16
+
+/**
+ * 卡名输入/遍历的硬字符上限（防止恶意超长粘贴拖慢；应略大于视觉预算下可能用到的长度）。
+ */
+export const CARD_NAME_CHAR_HARD_CAP = 32
+
+/**
+ * 卡名整体水平缩放下限（相对 `z.name.maxWidth`）。
+ * 低于此则不再缩小整串，改为省略号截断，避免字过小不可读。
+ */
+export const CARD_NAME_MIN_SCALE_X = 0.38
+
 /** 逻辑宽度（与既有预览一致） */
 export const CARD_W = 350
 
@@ -74,7 +91,8 @@ export function getYgoLayoutZones(card, canvasW = CARD_W, canvasH = CARD_H) {
   const attrCy = attribute.y + attribute.h / 2
   const attrR = Math.min(attribute.w, attribute.h) / 2
 
-  const name = { x: 65 * r, y: 96 * r, maxWidth: 610 * r }
+  /** 卡名区：y 略低于模板 96，避免在框内偏上（相对 813 参考坐标微调） */
+  const name = { x: 65 * r, y: 102 * r, maxWidth: 610 * r }
 
   const levelRef = {
     baseX: 686 * r,

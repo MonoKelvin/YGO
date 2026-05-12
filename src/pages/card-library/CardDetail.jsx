@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { Alert, Button, CopyButton, Tag } from '@lobehub/ui'
+import { Alert, CopyButton, Tag, Button } from '@lobehub/ui'
 import { ArrowLeft, ExternalLink, Loader2 } from 'lucide-react'
 import { fetchCardById } from '../../services/ygoprodeckApi'
 import {
@@ -145,6 +145,7 @@ export default function CardDetail() {
       <div className="card-detail-toolbar">
         <Button
           type="text"
+          variant="outlined"
           icon={<ArrowLeft size={18} />}
           onClick={() => navigate(-1)}
           className="card-detail-back"

@@ -172,17 +172,7 @@ function AppContent() {
 function App() {
   return (
     <RouteErrorBoundary title="应用界面渲染失败">
-      <ConfigProvider
-        motion={motion}
-        locale="zh-CN"
-        componentDefaults={{
-          Button: { variant: 'outlined' },
-          Input: { variant: 'outlined' },
-          Select: { variant: 'outlined' },
-          InputNumber: { variant: 'outlined' },
-          TextArea: { variant: 'outlined' },
-        }}
-      >
+      <ConfigProvider motion={motion} locale="zh-CN">
         <AppContent />
       </ConfigProvider>
     </RouteErrorBoundary>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Button, Tag, Tooltip } from '@lobehub/ui'
+import { Tag, Tooltip, Button } from '@lobehub/ui'
 import { Download, Heart, Plus } from 'lucide-react'
 import {
   getCardImageUrl,
@@ -77,6 +77,7 @@ export function useCardLibraryTableColumns({
               <Tooltip title="下载卡图">
                 <Button
                   type="text"
+                  variant="outlined"
                   size="small"
                   icon={<Download size={16} />}
                   onClick={(e) => {
@@ -88,6 +89,7 @@ export function useCardLibraryTableColumns({
               <Tooltip title="加入卡组">
                 <Button
                   type="text"
+                  variant="outlined"
                   size="small"
                   icon={<Plus size={16} />}
                   onClick={(e) => {
@@ -99,6 +101,7 @@ export function useCardLibraryTableColumns({
               <Tooltip title={fav ? '取消收藏' : '收藏'}>
                 <Button
                   type="text"
+                  variant="outlined"
                   size="small"
                   className={fav ? 'card-lib-fav-on' : ''}
                   icon={

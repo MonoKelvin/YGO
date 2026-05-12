@@ -1,8 +1,7 @@
-import { Button, Checkbox, Flexbox, SearchBar } from '@lobehub/ui'
+import { Checkbox, Flexbox, ScrollArea, Button, SearchBar } from '@lobehub/ui'
 import { Select } from '@lobehub/ui/base-ui'
 import { Loader2, Plus } from 'lucide-react'
 
-/** @lobehub/ui/base-ui 的选择器（替代主包已弃用的 Select） */
 export default function CardLibraryToolbarTable({
   libraryMode,
   searchInput,
@@ -40,12 +39,14 @@ export default function CardLibraryToolbarTable({
           <div className="card-library-toolbar-filters">
             <div className="card-library-search-grow">
               <SearchBar
+                variant="outlined"
                 value={searchInput}
                 onInputChange={setSearchInput}
                 placeholder="搜索名称（在线：模糊匹配 fname）"
               />
             </div>
             <Select
+              variant="outlined"
               allowClear
               placeholder="卡片类型"
               className="card-library-filter-select-type"
@@ -55,6 +56,7 @@ export default function CardLibraryToolbarTable({
               onChange={(v) => setFilters({ filterType: v || '' })}
             />
             <Select
+              variant="outlined"
               allowClear
               placeholder="怪兽属性"
               className="card-library-filter-select-attr"
@@ -72,7 +74,8 @@ export default function CardLibraryToolbarTable({
               </span>
               <Flexbox horizontal gap={8} align="center">
                 <Button
-                  type="primary"
+                  color="primary"
+                  variant="outlined"
                   disabled={!librarySelectedRowKeys.length}
                   icon={<Plus size={16} />}
                   onClick={() => {
@@ -89,16 +92,10 @@ export default function CardLibraryToolbarTable({
                 >
                   将所选加入卡组
                 </Button>
-                <Button
-                  disabled={apiPage <= 1 || loading}
-                  onClick={() => void fetchOnlinePage(apiPage - 1)}
-                >
+                <Button variant="outlined" disabled={apiPage <= 1 || loading} onClick={() => void fetchOnlinePage(apiPage - 1)}>
                   上一页
                 </Button>
-                <Button
-                  disabled={!apiHasMore || loading}
-                  onClick={() => void fetchOnlinePage(apiPage + 1)}
-                >
+                <Button variant="outlined" disabled={!apiHasMore || loading} onClick={() => void fetchOnlinePage(apiPage + 1)}>
                   下一页
                 </Button>
               </Flexbox>
@@ -111,7 +108,8 @@ export default function CardLibraryToolbarTable({
               </span>
               <Flexbox horizontal gap={8} align="center">
                 <Button
-                  type="primary"
+                  color="primary"
+                  variant="outlined"
                   disabled={!librarySelectedRowKeys.length}
                   icon={<Plus size={16} />}
                   onClick={() => {
@@ -136,15 +134,17 @@ export default function CardLibraryToolbarTable({
         </div>
 
         <div className="card-lib-table-area">
-          <div
+          <ScrollArea
             className={`card-lib-table-scroll${loading ? ' card-lib-table-scroll--loading' : ''}`}
+            contentProps={{ className: 'card-lib-table-scroll-content' }}
           >
-            {loading ? (
-              <div className="card-lib-loading-overlay" aria-busy="true">
-                <Loader2 className="ygo-spin" size={28} aria-hidden />
-              </div>
-            ) : null}
-            <table className="card-lib-table">
+            <div className="card-lib-table-scroll-inner">
+              {loading ? (
+                <div className="card-lib-loading-overlay" aria-busy="true">
+                  <Loader2 className="ygo-spin" size={28} aria-hidden />
+                </div>
+              ) : null}
+              <table className="card-lib-table">
               <thead>
                 <tr>
                   <th className="card-lib-col-check">
@@ -209,11 +209,13 @@ export default function CardLibraryToolbarTable({
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </ScrollArea>
           {libraryMode === 'local' &&
           filteredLocal.length > libraryPageSize ? (
             <div className="card-lib-local-pagination">
               <Button
+                variant="outlined"
                 disabled={libraryLocalPage <= 1 || loading}
                 onClick={() =>
                   setLibraryLocalPage(Math.max(1, libraryLocalPage - 1))
@@ -225,6 +227,7 @@ export default function CardLibraryToolbarTable({
                 {libraryLocalPage} / {localTotalPages}
               </span>
               <Button
+                variant="outlined"
                 disabled={
                   libraryLocalPage >= localTotalPages || loading
                 }

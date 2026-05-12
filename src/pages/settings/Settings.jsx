@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button, Form, ThemeSwitch, Tooltip, toast } from '@lobehub/ui'
+import { Form, ThemeSwitch, Tooltip, toast, Button } from '@lobehub/ui'
 import { Select, Switch } from '@lobehub/ui/base-ui'
 import {
   ExternalLink,
@@ -243,6 +243,7 @@ export default function Settings() {
     <div className="settings-data-actions">
       <Button
         size="small"
+        variant="outlined"
         icon={<FolderInput size={14} />}
         onClick={handlePickMigrate}
         disabled={dataPathBusy}
@@ -252,6 +253,7 @@ export default function Settings() {
       {showResetDefault && (
         <Button
           size="small"
+          variant="outlined"
           icon={<RotateCcw size={14} />}
           onClick={handleResetDefault}
           disabled={dataPathBusy}
@@ -298,7 +300,7 @@ export default function Settings() {
           label: '自动保存',
           desc: '是否自动保存卡牌数据',
           name: 'autoSave',
-          children: <Switch checked={autoSave} onChange={handleAutoSaveChange} />,
+          children: <Switch variant="outlined" checked={autoSave} onChange={handleAutoSaveChange} />,
           valuePropName: 'checked',
         },
         ...(electron?.toggleDevTools
@@ -307,7 +309,7 @@ export default function Settings() {
                 label: '开发者工具',
                 desc: '独立窗口打开；快捷键 Ctrl+Shift+I',
                 name: 'devTools',
-                children: <Switch checked={devToolsEnabled} onChange={handleDevToolsToggle} />,
+                children: <Switch variant="outlined" checked={devToolsEnabled} onChange={handleDevToolsToggle} />,
                 valuePropName: 'checked',
               },
             ]
@@ -337,6 +339,7 @@ export default function Settings() {
           name: 'libraryPageSize',
           children: (
             <Select
+              variant="outlined"
               options={libraryPageSizeOptions}
               value={libraryPageSize}
               onChange={handleLibraryPageSizeChange}

@@ -7,7 +7,7 @@ import {
   useTransition,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Segmented, toast } from '@lobehub/ui'
+import { toast, Button, Segmented } from '@lobehub/ui'
 import CardLibraryAddToDeckModal from '../../components/card-library/CardLibraryAddToDeckModal'
 import CardLibraryToolbarTable from '../../components/card-library/CardLibraryToolbarTable'
 import { Library, RefreshCw } from 'lucide-react'
@@ -354,6 +354,7 @@ export default function CardLibrary() {
         </h1>
         <div className="card-library-toolbar-row">
           <Segmented
+            variant="outlined"
             options={[
               { label: '在线查询（API）', value: 'online' },
               { label: '本地全库', value: 'local' },
@@ -366,7 +367,7 @@ export default function CardLibrary() {
             }
           />
           <div className="card-library-header-spacer" aria-hidden="true" />
-          <Button icon={<RefreshCw size={16} />} onClick={handleUpdateDb}>
+          <Button variant="outlined" icon={<RefreshCw size={16} />} onClick={handleUpdateDb}>
             更新数据库
           </Button>
         </div>

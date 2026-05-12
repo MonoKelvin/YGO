@@ -1,13 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import {
-  Button,
-  Flexbox,
-  Input,
-  Tag,
-  Text,
-  TextArea,
-  toast,
-} from '@lobehub/ui'
+import { Flexbox, Tag, Text, toast, Button, Input, TextArea } from '@lobehub/ui'
 import { openConfirmModal } from '../../utils/openConfirmModal'
 import { Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'

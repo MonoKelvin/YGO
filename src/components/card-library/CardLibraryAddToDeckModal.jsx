@@ -1,4 +1,4 @@
-import { Button, Flexbox, Modal } from '@lobehub/ui'
+import { Flexbox, Modal } from '@lobehub/ui'
 
 export default function CardLibraryAddToDeckModal({
   open,

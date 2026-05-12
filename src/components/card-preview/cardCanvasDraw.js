@@ -1,6 +1,9 @@
 import {
   CARD_H,
   CARD_W,
+  CARD_NAME_CHAR_HARD_CAP,
+  CARD_NAME_MIN_SCALE_X,
+  CARD_NAME_VISUAL_BUDGET,
   FRAME_THEME,
   getYgoLayoutZones,
 } from '../../config/cardLayout'
@@ -30,6 +33,84 @@ export function wrapTextLines(ctx, text, maxWidth) {
   }
   if (line) lines.push(line)
   return lines
+}
+
+const NAME_ELLIPSIS = '\u2026'
+
+/**
+ * 按「M 宽」为 1 的视觉预算 + `maxWidth` 双约束截断卡名（中英数字自动按实际字宽计入）。
+ * @param {CanvasRenderingContext2D} ctx 已设好 `font`
+ * @param {string} trimmed 已 trim 的卡名
+ * @param {number} maxWidthPx `z.name.maxWidth`
+ * @param {number} visualBudget 见 `CARD_NAME_VISUAL_BUDGET`
+ * @param {number} hardCap 见 `CARD_NAME_CHAR_HARD_CAP`
+ */
+function sliceNameByVisualBudget(ctx, trimmed, maxWidthPx, visualBudget, hardCap) {
+  if (!trimmed) return '???'
+  const refW = ctx.measureText('M').width || ctx.measureText('0').width || 1
+  let out = ''
+  let accUnits = 0
+  const chars = [...trimmed].slice(0, hardCap)
+  for (const ch of chars) {
+    const next = out + ch
+    if (ctx.measureText(next).width > maxWidthPx) break
+    const chUnits = Math.max(0.35, ctx.measureText(ch).width / refW)
+    if (out !== '' && accUnits + chUnits > visualBudget + 1e-6) break
+    out = next
+    accUnits += chUnits
+  }
+  if (out) return out
+  return chars[0] || '?'
+}
+
+/**
+ * 卡名在固定 `maxWidth` 下的绘制文案与水平缩放（避免逐字截断死循环与 O(n²) measureText）。
+ * @param {CanvasRenderingContext2D} ctx 已设好 `font`
+ * @param {string} rawName
+ * @param {number} maxWidth 由版面 `z.name.maxWidth` 得到
+ * @returns {{ drawText: string, scaleX: number }}
+ */
+export function fitCardNameForCanvas(ctx, rawName, maxWidth) {
+  const trimmed = rawName && String(rawName).trim() ? String(rawName).trim() : ''
+  const base = trimmed
+    ? sliceNameByVisualBudget(
+        ctx,
+        trimmed,
+        maxWidth,
+        CARD_NAME_VISUAL_BUDGET,
+        CARD_NAME_CHAR_HARD_CAP,
+      )
+    : '???'
+  if (maxWidth <= 1) {
+    return { drawText: base.slice(0, 1) || '?', scaleX: 1 }
+  }
+
+  const fullW = ctx.measureText(base).width
+  if (fullW <= maxWidth) {
+    return { drawText: base, scaleX: 1 }
+  }
+
+  const scale = maxWidth / fullW
+  if (scale >= CARD_NAME_MIN_SCALE_X) {
+    return { drawText: base, scaleX: scale }
+  }
+
+  const ell = NAME_ELLIPSIS
+  const ellW = ctx.measureText(ell).width
+  if (ellW >= maxWidth) {
+    return { drawText: ell, scaleX: 1 }
+  }
+
+  let lo = 0
+  let hi = base.length
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2)
+    const cand = base.slice(0, mid) + ell
+    if (ctx.measureText(cand).width <= maxWidth) lo = mid
+    else hi = mid - 1
+  }
+  const drawText = lo === 0 ? ell : base.slice(0, lo) + ell
+  return { drawText, scaleX: 1 }
 }
 
 function drawStar(ctx, cx, cy, spikes, outerR, innerR, fillStyle) {
@@ -144,20 +225,28 @@ export function paintCard(ctx, card, assets = {}) {
 
   const pic = z.pic
 
-  /** 卡名：与 ygo-card common.js name.fontSize ≈ 65（813 基准） */
+  /** 卡名：与 ygo-card common.js name.fontSize ≈ 65（813 基准）；宽度上限为 `z.name.maxWidth` */
   const nameStr = (card.name || '???').trim() || '???'
   ctx.font = `bold ${Math.round(65 * z.r)}px ${fontName}`
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'left'
-  let drawName = nameStr
-  while (drawName.length > 1 && ctx.measureText(drawName).width > z.name.maxWidth) {
-    drawName = drawName.slice(0, -1) + '…'
+  const { drawText: drawName, scaleX: nameScaleX } = fitCardNameForCanvas(
+    ctx,
+    nameStr,
+    z.name.maxWidth,
+  )
+  ctx.save()
+  if (nameScaleX !== 1) {
+    ctx.translate(z.name.x, z.name.y)
+    ctx.scale(nameScaleX, 1)
+    ctx.translate(-z.name.x, -z.name.y)
   }
   ctx.strokeStyle = 'rgba(255,255,255,0.85)'
-  ctx.lineWidth = 3 * z.r
+  ctx.lineWidth = nameScaleX < 1 ? (3 * z.r) / Math.max(nameScaleX, 0.2) : 3 * z.r
   ctx.strokeText(drawName, z.name.x, z.name.y)
   ctx.fillStyle = '#1a1a1a'
   ctx.fillText(drawName, z.name.x, z.name.y)
+  ctx.restore()
 
   if (cardType === 'monster' && !z.isLink) {
     drawLevelStarsYgo(ctx, card.level, z, assets.starIconImg)

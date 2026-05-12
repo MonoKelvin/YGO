@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, toast } from '@lobehub/ui'
+import { toast, Button } from '@lobehub/ui'
 import PageSpinner from '../../components/common/PageSpinner'
 import { openConfirmModal } from '../../utils/openConfirmModal'
 import { ArrowLeft, Trash2, Layers } from 'lucide-react'

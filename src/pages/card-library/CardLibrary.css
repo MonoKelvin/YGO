@@ -142,9 +142,19 @@
 }
 
 .card-library-main .card-lib-table-scroll {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
   position: relative;
+}
+
+.card-lib-table-scroll-inner {
+  position: relative;
+  min-width: min(720px, 100%);
+}
+
+.card-lib-table-scroll-content {
+  gap: 0 !important;
 }
 
 .card-lib-table-scroll--loading {

@@ -27,7 +27,6 @@
   padding: calc(var(--spacing-xl) + 4px) calc(var(--spacing-xl) + 6px);
   overflow-x: hidden;
   overflow-y: auto;
-  scrollbar-gutter: stable;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }

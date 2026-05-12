@@ -8,7 +8,7 @@ import {
   forwardRef,
 } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Button, ScrollArea, Text } from '@lobehub/ui'
+import { ScrollArea, Text, Button } from '@lobehub/ui'
 import {
   ExternalLink,
   FileText,
@@ -453,6 +453,11 @@ export default function RulesWiki() {
         </div>
 
         <aside className="rules-wiki-rail" aria-label="目录与资料">
+          <ScrollArea
+            className="rules-wiki-rail-scroll"
+            contentProps={{ className: 'rules-wiki-rail-scroll-content' }}
+          >
+            <div className="rules-wiki-rail-inner">
           <div className="rules-wiki-toc-panel">
             <div className="rules-wiki-toc-title">目录</div>
             <RulesWikiTocNav
@@ -535,6 +540,8 @@ export default function RulesWiki() {
               )}
             </div>
           </div>
+            </div>
+          </ScrollArea>
         </aside>
       </div>
     </div>

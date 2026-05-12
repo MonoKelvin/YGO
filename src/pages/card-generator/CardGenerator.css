@@ -1,50 +1,91 @@
+/**
+ * 卡牌生成：滚动区内边距（避免滚动条压住表单）、Lobe Form 控件列对齐。
+ */
 .card-generator {
-  display: flex;
-  gap: var(--spacing-xl);
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.card-generator-main {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-y: auto;
-}
-
-.card-generator-preview {
-  flex: 0 1 350px;
-  min-width: 0;
-  width: min(350px, 100%);
+  width: 100%;
   max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+}
+
+/** 与 Form demo 一致：整块表单在滚动区内留白 */
+.card-generator-form {
+  box-sizing: border-box;
+  padding: var(--spacing-md);
+  max-width: 100%;
+}
+
+.card-generator-scroll {
+  border-radius: var(--radius-md);
+}
+
+/** ScrollArea 内容层：右侧预留滚动条空间，避免与表单文字/控件重叠 */
+.card-generator-scroll-content {
+  gap: 0 !important;
+  padding-inline-end: var(--spacing-md);
+  padding-inline-start: var(--spacing-xs);
+  padding-block: var(--spacing-xs);
   box-sizing: border-box;
 }
 
-.card-generator-preview .section-title {
-  text-align: center;
-  margin-bottom: var(--spacing-md);
+.card-generator-preview {
+  flex: 0 1 380px !important;
+  width: min(380px, 42vw);
+  max-width: 100%;
+  align-self: stretch;
+}
+
+.card-generator-preview-canvas-wrap.card-preview {
+  width: 100%;
+  max-width: 350px;
+}
+
+/** 表单项控件列：与 Lobe Form + antd Form.Item 布局对齐 */
+.card-generator-form .ant-form-item-control-input-content {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.card-generator-form .ant-form-item-control-input-content > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.card-generator-form .ant-form-item-control-input-content > .ant-input-number,
+.card-generator-form .ant-form-item-control-input-content > .ant-input-number-affix-wrapper {
+  width: 100% !important;
+}
+
+.card-generator-form .ant-form-item-control-input-content textarea.ant-input {
+  width: 100%;
+  max-width: 100%;
+}
+
+/** 攻击力 / 防御力：数字框拉满，∞ 按钮固定 */
+.card-generator-inline-field {
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+}
+
+.card-generator-inline-field-grow {
+  flex: 1;
+  min-width: 0;
 }
 
 @media (max-width: 960px) {
   .card-generator {
-    flex-direction: column;
-    overflow-y: auto;
+    flex-direction: column !important;
+  }
+
+  .card-generator-scroll {
+    min-height: min(52vh, 480px);
   }
 
   .card-generator-preview {
+    flex: 0 0 auto !important;
     width: 100%;
+    padding-block: var(--spacing-md);
   }
-}
-
-.card-form {
-  width: 100%;
-}
-
-.form-actions {
-  display: flex;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-lg);
 }

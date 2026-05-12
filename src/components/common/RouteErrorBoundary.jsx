@@ -64,7 +64,9 @@ export default class RouteErrorBoundary extends Component {
 
           <Button
 
-            type="primary"
+            color="primary"
+
+            variant="outlined"
 
             onClick={() => this.setState({ error: null })}
 
