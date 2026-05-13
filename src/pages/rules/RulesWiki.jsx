@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { ScrollArea, Text, Button } from '@lobehub/ui'
+import { ScrollArea, Text, Button, Flexbox } from '@lobehub/ui'
 import {
   ExternalLink,
   FileText,
@@ -105,35 +105,35 @@ function joinResourcePath(base, ...segments) {
 
 function createSharedMdComponents() {
   return {
-    p: ({ children }) => <p className="rules-wiki-p">{children}</p>,
-    ul: ({ children }) => <ul className="rules-wiki-ul">{children}</ul>,
-    ol: ({ children }) => <ol className="rules-wiki-ol">{children}</ol>,
-    li: ({ children }) => <li className="rules-wiki-li">{children}</li>,
+    p: ({ children }) => <p className="wiki-p">{children}</p>,
+    ul: ({ children }) => <ul className="wiki-ul">{children}</ul>,
+    ol: ({ children }) => <ol className="wiki-ol">{children}</ol>,
+    li: ({ children }) => <li className="wiki-li">{children}</li>,
     blockquote: ({ children }) => (
-      <blockquote className="rules-wiki-quote">{children}</blockquote>
+      <blockquote className="wiki-blockquote">{children}</blockquote>
     ),
     code: ({ className, children }) => {
       const isBlock = className?.includes('language-')
       if (isBlock) {
         return (
-          <pre className="rules-wiki-pre">
+          <pre className="wiki-pre">
             <code>{children}</code>
           </pre>
         )
       }
-      return <code className="rules-wiki-code">{children}</code>
+      return <code className="wiki-code">{children}</code>
     },
     table: ({ children }) => (
-      <div className="rules-wiki-table-wrap">
-        <table className="rules-wiki-table">{children}</table>
+      <div className="wiki-table-wrap">
+        <table className="wiki-table">{children}</table>
       </div>
     ),
     a: ({ href, children }) => (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="rules-wiki-a">
+      <a href={href} target="_blank" rel="noopener noreferrer" className="wiki-link">
         {children}
       </a>
     ),
-    hr: () => <hr className="rules-wiki-hr" />,
+    hr: () => <hr className="wiki-hr" />,
   }
 }
 
@@ -146,13 +146,13 @@ function MarkdownSection({ section, sharedMd }) {
   const components = useMemo(
     () => ({
       ...sharedMd,
-      h1: ({ children }) => <h1 className="rules-wiki-h1">{children}</h1>,
+      h1: ({ children }) => <h1 className="wiki-h1">{children}</h1>,
       h2: ({ children, id, className }) => (
-        <h2 id={id} className={['rules-wiki-h2', className].filter(Boolean).join(' ')}>
+        <h2 id={id} className={['wiki-h2', className].filter(Boolean).join(' ')}>
           {children}
         </h2>
       ),
-      h3: ({ children }) => <h3 className="rules-wiki-h3">{children}</h3>,
+      h3: ({ children }) => <h3 className="wiki-h3">{children}</h3>,
     }),
     [sharedMd],
   )
@@ -164,18 +164,18 @@ function MarkdownSection({ section, sharedMd }) {
   )
 }
 
-function RulesWikiTocNav({ rows, activeId, onActivate, className }) {
+function RulesWikiTocNav({ rows, activeId, onActivate }) {
   return (
-    <nav className={className} aria-label="章节列表">
+    <nav className="wiki-toc-nav" aria-label="章节列表">
       {rows.map((row) => {
         const active = activeId === row.id
-        const base = row.kind === 'part' ? 'rules-wiki-toc-part' : 'rules-wiki-toc-item'
+        const base = row.kind === 'part' ? 'wiki-toc-part' : 'wiki-toc-item'
         return (
           <button
             key={`${row.kind}-${row.id}`}
             type="button"
             title={row.kind === 'part' ? row.hint : undefined}
-            className={`${base}${active ? ' is-active' : ''}`}
+            className={`${base}${active ? ' active' : ''}`}
             onClick={() => onActivate(row.id)}
           >
             {row.label}
@@ -229,44 +229,36 @@ export default function RulesWiki() {
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false)
 
   const scrollContentToId = useCallback((id) => {
-    const root = contentScrollRef.current
-    if (!root) return
     requestAnimationFrame(() => {
       const el = document.getElementById(id)
       if (!el) return
-      const rootRect = root.getBoundingClientRect()
-      const elRect = el.getBoundingClientRect()
-      const target = root.scrollTop + elRect.top - rootRect.top - 16
-      root.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
   }, [])
 
   const scrollContentToTop = useCallback(() => {
-    contentScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    contentScrollRef.current?.scrollTo(0)
   }, [])
 
   useEffect(() => {
-    const root = contentScrollRef.current
-    if (!root) return
+    const viewport = contentScrollRef.current
+    if (!viewport) return
 
     const handleScroll = () => {
-      const st = root.scrollTop
-      setShowScrollTopBtn(st >= SCROLL_TOP_BTN_SHOW_PX)
+      setShowScrollTopBtn(viewport.scrollTop >= SCROLL_TOP_BTN_SHOW_PX)
     }
-    root.addEventListener('scroll', handleScroll, { passive: true })
-    return () => root.removeEventListener('scroll', handleScroll)
+
+    viewport.addEventListener('scroll', handleScroll, { passive: true })
+    return () => viewport.removeEventListener('scroll', handleScroll)
   }, [])
 
   useEffect(() => {
-    const root = contentScrollRef.current
-    if (!root) return
-
     if (observerRef.current) {
       observerRef.current.disconnect()
     }
 
     const visibleSet = new Set()
-    let scheduled = false
+    let rafId = null
 
     const updateActive = () => {
       if (visibleSet.size === 0) return
@@ -276,9 +268,9 @@ export default function RulesWiki() {
         if (visibleSet.has(id)) {
           const el = document.getElementById(id)
           if (el) {
-            const top = el.getBoundingClientRect().top
-            if (top < bestTop) {
-              bestTop = top
+            const rect = el.getBoundingClientRect()
+            if (rect.top < bestTop) {
+              bestTop = rect.top
               best = id
             }
           }
@@ -300,17 +292,14 @@ export default function RulesWiki() {
             }
           }
         }
-        if (!scheduled) {
-          scheduled = true
-          requestAnimationFrame(() => {
-            scheduled = false
-            updateActive()
-          })
-        }
+        if (rafId) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(() => {
+          rafId = null
+          updateActive()
+        })
       },
       {
-        root: root,
-        rootMargin: '-80px 0px -60% 0px',
+        rootMargin: '-80px 0px -70% 0px',
         threshold: 0,
       },
     )
@@ -326,13 +315,14 @@ export default function RulesWiki() {
       if (observerRef.current) {
         observerRef.current.disconnect()
       }
+      if (rafId) cancelAnimationFrame(rafId)
     }
   }, [orderedNavIds, activeId])
 
   useEffect(() => {
     const nav = tocScrollRef.current
     if (!nav || !activeId) return
-    const btn = nav.querySelector(`button.is-active`)
+    const btn = nav.querySelector('.active')
     if (btn) {
       btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     }
@@ -351,7 +341,7 @@ export default function RulesWiki() {
       const pdfPath = joinResourcePath(base, 'docs', 'Rulebook_v9_official_en.pdf')
       const res = await electron.openPathInExplorer(pdfPath)
       if (!res.success) {
-        window.alert(res.error || '无法打开 PDF。可在浏览器从 Konami 官网下载 Rulebook。')
+        window.alert(res.error || '无法打开 PDF')
       }
     } catch (e) {
       window.alert(e.message || String(e))
@@ -374,37 +364,32 @@ export default function RulesWiki() {
   }
 
   return (
-    <div className="rules-wiki-page">
-      <div className="rules-wiki-header">
-        <h1 className="rules-wiki-page-title">
+    <Flexbox className="wiki-container">
+      <div className="wiki-header">
+        <div className="wiki-header-title">
           <BookOpen size={20} />
-          <span>规则百科</span>
-        </h1>
-        <Text className="rules-wiki-page-desc">
-          游戏王打牌规则由浅入深：入门 → 基础 → 进阶 → 深入。细则以 Konami
-          官方数据库为准。
+          <h1>规则百科</h1>
+        </div>
+        <Text className="wiki-header-desc">
+          游戏王打牌规则由浅入深：入门 → 基础 → 进阶 → 深入。细则以 Konami 官方数据库为准。
         </Text>
       </div>
 
-      <div className="rules-wiki-layout">
-        <div className="rules-wiki-main">
-          <ScrollArea
-            ref={contentScrollRef}
-            className="rules-wiki-article-scroll"
-            viewportClassName="rules-wiki-article-viewport"
-          >
+      <div className="wiki-body">
+        <div className="wiki-content">
+          <ScrollArea className="wiki-content-scroll" scrollbarProps={{ autoHide: true }}>
             {showScrollTopBtn && (
               <Button
-                className="rules-wiki-scroll-top-btn"
+                className="wiki-scroll-top-btn"
                 onClick={scrollContentToTop}
                 icon={<ChevronUp />}
                 size="small"
                 variant="filled"
               />
             )}
-            <article className="rules-wiki-article">
+            <article className="wiki-article">
               {sections.map((s) => (
-                <section key={s.id} id={s.id} className="rules-wiki-part">
+                <section key={s.id} id={s.id} className="wiki-section">
                   <MarkdownSection section={s} sharedMd={sharedMd} />
                 </section>
               ))}
@@ -412,40 +397,35 @@ export default function RulesWiki() {
           </ScrollArea>
         </div>
 
-        <aside className="rules-wiki-rail">
-          <ScrollArea
-            ref={tocScrollRef}
-            className="rules-wiki-toc-scroll"
-            viewportClassName="rules-wiki-toc-viewport"
-          >
-            <div className="rules-wiki-toc-panel">
-              <div className="rules-wiki-toc-header">
-                <span className="rules-wiki-toc-title">目录</span>
+        <div className="wiki-sidebar">
+          <ScrollArea className="wiki-sidebar-scroll" scrollbarProps={{ autoHide: true }}>
+            <div className="wiki-toc-card">
+              <div className="wiki-toc-header">
+                <span className="wiki-toc-title">目录</span>
               </div>
               <RulesWikiTocNav
                 rows={flatHeadings}
                 activeId={activeId}
                 onActivate={scrollContentToId}
-                className="rules-wiki-toc-nav"
               />
             </div>
 
-            <div className="rules-wiki-info-panel">
-              <div className="rules-wiki-info-header">
+            <div className="wiki-ref-card">
+              <div className="wiki-ref-header">
                 <Link2 size={14} />
                 <span>资料来源</span>
               </div>
-              <Text className="rules-wiki-info-desc">
+              <Text className="wiki-ref-desc">
                 竞技裁定以 Konami 官方数据库为准。
               </Text>
-              <div className="rules-wiki-info-buttons">
+              <div className="wiki-ref-links">
                 {RULE_REFERENCE_SOURCES.slice(0, 3).map((src) => (
                   <Button
                     key={src.id}
                     variant="text"
                     size="small"
                     block
-                    className="rules-wiki-source-btn"
+                    className="wiki-ref-btn"
                     icon={<ExternalLink size={12} />}
                     onClick={() => openExternal(src.url)}
                   >
@@ -455,18 +435,18 @@ export default function RulesWiki() {
               </div>
             </div>
 
-            <div className="rules-wiki-info-panel">
-              <div className="rules-wiki-info-header">
+            <div className="wiki-ref-card">
+              <div className="wiki-ref-header">
                 <BookMarked size={14} />
                 <span>官方规则书</span>
               </div>
-              <div className="rules-wiki-info-buttons">
+              <div className="wiki-ref-links">
                 <Button
                   variant="text"
                   size="small"
                   block
                   icon={<FileText size={12} />}
-                  onClick={() => handleOpenPdf()}
+                  onClick={handleOpenPdf}
                   disabled={!electron?.getResourcePath}
                 >
                   打开本地 PDF
@@ -490,7 +470,7 @@ export default function RulesWiki() {
                     size="small"
                     block
                     icon={<FolderOpen size={12} />}
-                    onClick={() => handleOpenDocsFolder()}
+                    onClick={handleOpenDocsFolder}
                   >
                     文档文件夹
                   </Button>
@@ -498,8 +478,8 @@ export default function RulesWiki() {
               </div>
             </div>
           </ScrollArea>
-        </aside>
+        </div>
       </div>
-    </div>
+    </Flexbox>
   )
 }
