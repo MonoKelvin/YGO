@@ -29,6 +29,7 @@
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 
 .app-content > * {
@@ -37,11 +38,6 @@
   min-width: 0;
   width: 100%;
   max-width: 100%;
-}
-
-.app-content:has(.wiki-container) {
-  padding: 0;
-  overflow: hidden;
 }
 
 .app-logo-row {
