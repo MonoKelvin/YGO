@@ -1,12 +1,4 @@
-import {
-  useMemo,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useState,
-  useCallback,
-  forwardRef,
-} from 'react'
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { ScrollArea, Text, Button } from '@lobehub/ui'
 import {
@@ -31,7 +23,6 @@ import { toString } from 'mdast-util-to-string'
 import { RULE_REFERENCE_SOURCES } from '../../config/ruleSources'
 import './RulesWiki.css'
 
-const RULES_WIKI_SCROLL_ALIGN_TOP = 88
 const SCROLL_TOP_BTN_SHOW_PX = 200
 
 const RULE_SECTIONS_RAW = [
@@ -115,15 +106,9 @@ function joinResourcePath(base, ...segments) {
 function createSharedMdComponents() {
   return {
     p: ({ children }) => <p className="rules-wiki-p">{children}</p>,
-    ul: ({ children }) => (
-      <ul className="rules-wiki-ul">{children}</ul>
-    ),
-    ol: ({ children }) => (
-      <ol className="rules-wiki-ol">{children}</ol>
-    ),
-    li: ({ children }) => (
-      <li className="rules-wiki-li">{children}</li>
-    ),
+    ul: ({ children }) => <ul className="rules-wiki-ul">{children}</ul>,
+    ol: ({ children }) => <ol className="rules-wiki-ol">{children}</ol>,
+    li: ({ children }) => <li className="rules-wiki-li">{children}</li>,
     blockquote: ({ children }) => (
       <blockquote className="rules-wiki-quote">{children}</blockquote>
     ),
@@ -144,12 +129,7 @@ function createSharedMdComponents() {
       </div>
     ),
     a: ({ href, children }) => (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="rules-wiki-a"
-      >
+      <a href={href} target="_blank" rel="noopener noreferrer" className="rules-wiki-a">
         {children}
       </a>
     ),
@@ -166,20 +146,13 @@ function MarkdownSection({ section, sharedMd }) {
   const components = useMemo(
     () => ({
       ...sharedMd,
-      h1: ({ children }) => (
-        <h1 className="rules-wiki-h1">{children}</h1>
-      ),
+      h1: ({ children }) => <h1 className="rules-wiki-h1">{children}</h1>,
       h2: ({ children, id, className }) => (
-        <h2
-          id={id}
-          className={['rules-wiki-h2', className].filter(Boolean).join(' ')}
-        >
+        <h2 id={id} className={['rules-wiki-h2', className].filter(Boolean).join(' ')}>
           {children}
         </h2>
       ),
-      h3: ({ children }) => (
-        <h3 className="rules-wiki-h3">{children}</h3>
-      ),
+      h3: ({ children }) => <h3 className="rules-wiki-h3">{children}</h3>,
     }),
     [sharedMd],
   )
@@ -191,16 +164,12 @@ function MarkdownSection({ section, sharedMd }) {
   )
 }
 
-const RulesWikiTocNav = forwardRef(function RulesWikiTocNav(
-  { rows, activeId, onActivate, className },
-  ref,
-) {
+function RulesWikiTocNav({ rows, activeId, onActivate, className }) {
   return (
-    <nav ref={ref} className={className} aria-label="章节列表">
+    <nav className={className} aria-label="章节列表">
       {rows.map((row) => {
         const active = activeId === row.id
-        const base =
-          row.kind === 'part' ? 'rules-wiki-toc-part' : 'rules-wiki-toc-item'
+        const base = row.kind === 'part' ? 'rules-wiki-toc-part' : 'rules-wiki-toc-item'
         return (
           <button
             key={`${row.kind}-${row.id}`}
@@ -215,20 +184,13 @@ const RulesWikiTocNav = forwardRef(function RulesWikiTocNav(
       })}
     </nav>
   )
-})
-
-function headingTopInScroller(el, scrollRoot) {
-  return (
-    el.getBoundingClientRect().top -
-    scrollRoot.getBoundingClientRect().top +
-    scrollRoot.scrollTop
-  )
 }
 
 export default function RulesWiki() {
   const electron = typeof window !== 'undefined' ? window.electronAPI : null
   const contentScrollRef = useRef(null)
-  const tocNavRef = useRef(null)
+  const tocScrollRef = useRef(null)
+  const observerRef = useRef(null)
 
   const sections = useMemo(
     () =>
@@ -247,7 +209,7 @@ export default function RulesWiki() {
       rows.push({
         kind: 'part',
         id: s.id,
-        label: `${s.title}（${s.subtitle}）`,
+        label: s.title,
         hint: s.subtitle,
       })
       for (const h of s.h2s) {
@@ -261,39 +223,22 @@ export default function RulesWiki() {
     return rows
   }, [sections])
 
-  const orderedNavIds = useMemo(
-    () => flatHeadings.map((r) => r.id),
-    [flatHeadings],
-  )
+  const orderedNavIds = useMemo(() => flatHeadings.map((r) => r.id), [flatHeadings])
 
   const [activeId, setActiveId] = useState(() => orderedNavIds[0] ?? null)
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false)
 
-  const syncActiveFromContentScroll = useCallback(() => {
-    const root = contentScrollRef.current
-    if (!root || !orderedNavIds.length) return
-    const st = root.scrollTop
-    const lead = RULES_WIKI_SCROLL_ALIGN_TOP
-    let chosen = orderedNavIds[0]
-    for (const id of orderedNavIds) {
-      const el = document.getElementById(id)
-      if (!el) continue
-      const topIn = headingTopInScroller(el, root)
-      if (topIn <= st + lead + 1) chosen = id
-    }
-    setActiveId((prev) => (prev === chosen ? prev : chosen))
-  }, [orderedNavIds])
-
   const scrollContentToId = useCallback((id) => {
     const root = contentScrollRef.current
-    const el = document.getElementById(id)
-    if (!root || !el) return
-    const run = () => {
-      const topIn = headingTopInScroller(el, root)
-      const target = Math.max(0, topIn - RULES_WIKI_SCROLL_ALIGN_TOP)
-      root.scrollTo({ top: target, behavior: 'smooth' })
-    }
-    requestAnimationFrame(() => requestAnimationFrame(run))
+    if (!root) return
+    requestAnimationFrame(() => {
+      const el = document.getElementById(id)
+      if (!el) return
+      const rootRect = root.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      const target = root.scrollTop + elRect.top - rootRect.top - 16
+      root.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
+    })
   }, [])
 
   const scrollContentToTop = useCallback(() => {
@@ -302,64 +247,95 @@ export default function RulesWiki() {
 
   useEffect(() => {
     const root = contentScrollRef.current
-    if (!root) return undefined
-    const key = 'ygo:rulesWikiArticleScroll'
-    const saved = sessionStorage.getItem(key)
-    if (saved != null) {
-      const y = parseInt(saved, 10)
-      if (!Number.isNaN(y)) requestAnimationFrame(() => { root.scrollTop = y })
+    if (!root) return
+
+    const handleScroll = () => {
+      const st = root.scrollTop
+      setShowScrollTopBtn(st >= SCROLL_TOP_BTN_SHOW_PX)
     }
-    let idle = null
-    const persist = () => {
-      if (idle != null) cancelAnimationFrame(idle)
-      idle = requestAnimationFrame(() => {
-        idle = null
-        sessionStorage.setItem(key, String(root.scrollTop))
-      })
-    }
-    root.addEventListener('scroll', persist, { passive: true })
-    return () => {
-      if (idle != null) cancelAnimationFrame(idle)
-      sessionStorage.setItem(key, String(root.scrollTop))
-      root.removeEventListener('scroll', persist)
-    }
+    root.addEventListener('scroll', handleScroll, { passive: true })
+    return () => root.removeEventListener('scroll', handleScroll)
   }, [])
 
   useEffect(() => {
     const root = contentScrollRef.current
-    if (!root) return undefined
-    let ticking = false
-    const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(() => {
-        ticking = false
-        syncActiveFromContentScroll()
-        const st = root.scrollTop
-        setShowScrollTopBtn((prev) => {
-          const next = st >= SCROLL_TOP_BTN_SHOW_PX
-          return prev === next ? prev : next
-        })
-      })
-    }
-    root.addEventListener('scroll', onScroll, { passive: true })
-    syncActiveFromContentScroll()
-    return () => root.removeEventListener('scroll', onScroll)
-  }, [syncActiveFromContentScroll])
+    if (!root) return
 
-  useLayoutEffect(() => {
-    syncActiveFromContentScroll()
-    const root = contentScrollRef.current
-    if (root) {
-      setShowScrollTopBtn(root.scrollTop >= SCROLL_TOP_BTN_SHOW_PX)
+    if (observerRef.current) {
+      observerRef.current.disconnect()
     }
-  }, [orderedNavIds, syncActiveFromContentScroll])
+
+    const visibleSet = new Set()
+    let scheduled = false
+
+    const updateActive = () => {
+      if (visibleSet.size === 0) return
+      let best = null
+      let bestTop = Infinity
+      for (const id of orderedNavIds) {
+        if (visibleSet.has(id)) {
+          const el = document.getElementById(id)
+          if (el) {
+            const top = el.getBoundingClientRect().top
+            if (top < bestTop) {
+              bestTop = top
+              best = id
+            }
+          }
+        }
+      }
+      if (best && best !== activeId) {
+        setActiveId(best)
+      }
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.target.id) {
+            if (entry.isIntersecting) {
+              visibleSet.add(entry.target.id)
+            } else {
+              visibleSet.delete(entry.target.id)
+            }
+          }
+        }
+        if (!scheduled) {
+          scheduled = true
+          requestAnimationFrame(() => {
+            scheduled = false
+            updateActive()
+          })
+        }
+      },
+      {
+        root: root,
+        rootMargin: '-80px 0px -60% 0px',
+        threshold: 0,
+      },
+    )
+
+    for (const id of orderedNavIds) {
+      const el = document.getElementById(id)
+      if (el) {
+        observerRef.current.observe(el)
+      }
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [orderedNavIds, activeId])
 
   useEffect(() => {
-    const nav = tocNavRef.current
+    const nav = tocScrollRef.current
     if (!nav || !activeId) return
     const btn = nav.querySelector(`button.is-active`)
-    btn?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+    if (btn) {
+      btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
   }, [activeId])
 
   useEffect(() => {
@@ -372,17 +348,10 @@ export default function RulesWiki() {
     if (!electron?.getResourcePath || !electron?.openPathInExplorer) return
     try {
       const base = await electron.getResourcePath()
-      const pdfPath = joinResourcePath(
-        base,
-        'docs',
-        'Rulebook_v9_official_en.pdf',
-      )
+      const pdfPath = joinResourcePath(base, 'docs', 'Rulebook_v9_official_en.pdf')
       const res = await electron.openPathInExplorer(pdfPath)
       if (!res.success) {
-        window.alert(
-          res.error ||
-            '无法打开 PDF。可在浏览器从 Konami 官网下载 Rulebook。',
-        )
+        window.alert(res.error || '无法打开 PDF。可在浏览器从 Konami 官网下载 Rulebook。')
       }
     } catch (e) {
       window.alert(e.message || String(e))
@@ -406,14 +375,15 @@ export default function RulesWiki() {
 
   return (
     <div className="rules-wiki-page">
-      <div className="page-header">
-        <h1 className="page-title">
-          <BookOpen size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-          规则百科
+      <div className="rules-wiki-header">
+        <h1 className="rules-wiki-page-title">
+          <BookOpen size={20} />
+          <span>规则百科</span>
         </h1>
-        <p className="page-description">
-          开篇为「百科引言」（世界观、维基与官网、动画赛事与数据库外链）；其后为打牌规则，由浅入深。细则以 Konami 与数据库为准。
-        </p>
+        <Text className="rules-wiki-page-desc">
+          游戏王打牌规则由浅入深：入门 → 基础 → 进阶 → 深入。细则以 Konami
+          官方数据库为准。
+        </Text>
       </div>
 
       <div className="rules-wiki-layout">
@@ -421,26 +391,16 @@ export default function RulesWiki() {
           <ScrollArea
             ref={contentScrollRef}
             className="rules-wiki-article-scroll"
-            tabIndex={0}
-            role="region"
-            aria-label="规则正文"
+            viewportClassName="rules-wiki-article-viewport"
           >
             {showScrollTopBtn && (
-              <div
-                className="rules-wiki-scroll-top-float"
-                aria-hidden={false}
-              >
-                <Button
-                  variant="outlined"
-                  size="small"
-                  className="rules-wiki-scroll-top-btn"
-                  onClick={scrollContentToTop}
-                  title="正文回到顶部"
-                  aria-label="正文回到顶部"
-                >
-                  <ChevronUp size={18} strokeWidth={2} />
-                </Button>
-              </div>
+              <Button
+                className="rules-wiki-scroll-top-btn"
+                onClick={scrollContentToTop}
+                icon={<ChevronUp />}
+                size="small"
+                variant="filled"
+              />
             )}
             <article className="rules-wiki-article">
               {sections.map((s) => (
@@ -452,94 +412,90 @@ export default function RulesWiki() {
           </ScrollArea>
         </div>
 
-        <aside className="rules-wiki-rail" aria-label="目录与资料">
+        <aside className="rules-wiki-rail">
           <ScrollArea
-            className="rules-wiki-rail-scroll"
-            contentProps={{ className: 'rules-wiki-rail-scroll-content' }}
+            ref={tocScrollRef}
+            className="rules-wiki-toc-scroll"
+            viewportClassName="rules-wiki-toc-viewport"
           >
-            <div className="rules-wiki-rail-inner">
-          <div className="rules-wiki-toc-panel">
-            <div className="rules-wiki-toc-title">目录</div>
-            <RulesWikiTocNav
-              ref={tocNavRef}
-              rows={flatHeadings}
-              activeId={activeId}
-              onActivate={scrollContentToId}
-              className="rules-wiki-toc-nav"
-            />
-          </div>
-
-          <div className="rules-wiki-sources-panel">
-            <div className="rules-wiki-sources-title">
-              <Link2 size={14} aria-hidden />
-              资料来源
+            <div className="rules-wiki-toc-panel">
+              <div className="rules-wiki-toc-header">
+                <span className="rules-wiki-toc-title">目录</span>
+              </div>
+              <RulesWikiTocNav
+                rows={flatHeadings}
+                activeId={activeId}
+                onActivate={scrollContentToId}
+                className="rules-wiki-toc-nav"
+              />
             </div>
-            <Text as="p" className="rules-wiki-sources-intro">
-              以下为常用公开文档与仓库链接，点击在浏览器中打开。正文由应用整理，与第三方文档如有出入以
-              Konami 官方为准。
-            </Text>
-            <div className="rules-wiki-sources-buttons">
-              {RULE_REFERENCE_SOURCES.map((src) => (
+
+            <div className="rules-wiki-info-panel">
+              <div className="rules-wiki-info-header">
+                <Link2 size={14} />
+                <span>资料来源</span>
+              </div>
+              <Text className="rules-wiki-info-desc">
+                竞技裁定以 Konami 官方数据库为准。
+              </Text>
+              <div className="rules-wiki-info-buttons">
+                {RULE_REFERENCE_SOURCES.slice(0, 3).map((src) => (
+                  <Button
+                    key={src.id}
+                    variant="text"
+                    size="small"
+                    block
+                    className="rules-wiki-source-btn"
+                    icon={<ExternalLink size={12} />}
+                    onClick={() => openExternal(src.url)}
+                  >
+                    {src.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="rules-wiki-info-panel">
+              <div className="rules-wiki-info-header">
+                <BookMarked size={14} />
+                <span>官方规则书</span>
+              </div>
+              <div className="rules-wiki-info-buttons">
                 <Button
-                  key={src.id}
-                  variant="outlined"
+                  variant="text"
                   size="small"
                   block
-                  className="rules-wiki-source-btn"
-                  icon={<ExternalLink size={13} />}
-                  onClick={() => openExternal(src.url)}
+                  icon={<FileText size={12} />}
+                  onClick={() => handleOpenPdf()}
+                  disabled={!electron?.getResourcePath}
                 >
-                  <span className="rules-wiki-source-btn-text">
-                    <span className="rules-wiki-source-label">{src.label}</span>
-                    <span className="rules-wiki-source-hint">{src.hint}</span>
-                  </span>
+                  打开本地 PDF
                 </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rules-wiki-appendix-panel">
-            <div className="rules-wiki-appendix-title">
-              <BookMarked size={14} aria-hidden />
-              附加资料（PDF）
-            </div>
-            <p className="rules-wiki-appendix-desc">
-              Konami 英文 Rulebook（如 v9）完整术语与图示，可与正文对照；官方页面亦可下载最新版。
-            </p>
-            <div className="rules-wiki-appendix-actions">
-              <Button
-                variant="outlined"
-                size="small"
-                icon={<FileText size={14} />}
-                onClick={() => void handleOpenPdf()}
-                disabled={!electron?.getResourcePath}
-              >
-                打开本地 PDF
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                icon={<ExternalLink size={14} />}
-                onClick={() =>
-                  openExternal(
-                    'https://www.yugioh-card.com/eu/wp-content/uploads/2022/07/Rulebook_v9_en.pdf',
-                  )
-                }
-              >
-                浏览器下载 PDF
-              </Button>
-              {electron?.getResourcePath && (
                 <Button
-                  variant="outlined"
+                  variant="text"
                   size="small"
-                  icon={<FolderOpen size={14} />}
-                  onClick={() => void handleOpenDocsFolder()}
+                  block
+                  icon={<ExternalLink size={12} />}
+                  onClick={() =>
+                    openExternal(
+                      'https://www.yugioh-card.com/eu/wp-content/uploads/2022/07/Rulebook_v9_en.pdf',
+                    )
+                  }
                 >
-                  文档文件夹
+                  浏览器下载
                 </Button>
-              )}
-            </div>
-          </div>
+                {electron?.getResourcePath && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    block
+                    icon={<FolderOpen size={12} />}
+                    onClick={() => handleOpenDocsFolder()}
+                  >
+                    文档文件夹
+                  </Button>
+                )}
+              </div>
             </div>
           </ScrollArea>
         </aside>
