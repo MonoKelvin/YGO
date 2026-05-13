@@ -56,20 +56,18 @@ function extractHeadings(sectionId, md) {
 
 function remarkHeadingIds(sectionId) {
   return (tree) => {
+    if (!tree) return
     let h2Index = 0
     let h3Index = 0
     visit(tree, 'heading', (node) => {
+      if (!node) return
+      node.data = node.data || {}
+      node.data.hProperties = node.data.hProperties || {}
       if (node.depth === 1) {
-        node.data = node.data || {}
-        node.data.hProperties = node.data.hProperties || {}
         node.data.hProperties.id = sectionId
       } else if (node.depth === 2) {
-        node.data = node.data || {}
-        node.data.hProperties = node.data.hProperties || {}
         node.data.hProperties.id = `${sectionId}-h2-${h2Index++}`
       } else if (node.depth === 3) {
-        node.data = node.data || {}
-        node.data.hProperties = node.data.hProperties || {}
         node.data.hProperties.id = `${sectionId}-h3-${h3Index++}`
       }
     })
