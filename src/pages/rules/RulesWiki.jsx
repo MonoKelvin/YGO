@@ -98,7 +98,7 @@ function joinResourcePath(base, ...segments) {
   const sep = base.includes('\\') ? '\\' : '/'
   let s = base.replace(/[/\\]+$/, '')
   for (const seg of segments) {
-    s += sep + seg.replace(/^[/\\]+/, '')
+    s += sep + seg.replace(/^[/\\]+$/, '')
   }
   return s
 }
@@ -188,8 +188,9 @@ function RulesWikiTocNav({ rows, activeId, onActivate }) {
 
 export default function RulesWiki() {
   const electron = typeof window !== 'undefined' ? window.electronAPI : null
-  const contentScrollRef = useRef(null)
-  const tocScrollRef = useRef(null)
+  const contentScrollAreaRef = useRef(null)
+  const sidebarScrollAreaRef = useRef(null)
+  const contentContainerRef = useRef(null)
   const observerRef = useRef(null)
 
   const sections = useMemo(
@@ -228,29 +229,52 @@ export default function RulesWiki() {
   const [activeId, setActiveId] = useState(() => orderedNavIds[0] ?? null)
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false)
 
+  const getScrollContainer = useCallback(() => {
+    if (!contentScrollAreaRef.current) return null
+    const el = contentScrollAreaRef.current
+    const viewport = el.querySelector('[data-radix-scroll-area-viewport]') || el.querySelector('.ant-scroll-viewport') || el
+    return viewport
+  }, [])
+
   const scrollContentToId = useCallback((id) => {
     requestAnimationFrame(() => {
       const el = document.getElementById(id)
-      if (!el) return
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const scrollContainer = getScrollContainer()
+      if (!el || !scrollContainer) return
+
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      
+      const scrollTop = scrollContainer.scrollTop + (elRect.top - containerRect.top) - 20
+      
+      scrollContainer.scrollTo({
+        top: scrollTop,
+        behavior: 'smooth'
+      })
     })
-  }, [])
+  }, [getScrollContainer])
 
   const scrollContentToTop = useCallback(() => {
-    contentScrollRef.current?.scrollTo(0)
-  }, [])
+    const scrollContainer = getScrollContainer()
+    if (scrollContainer) {
+      scrollContainer.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+  }, [getScrollContainer])
 
   useEffect(() => {
-    const viewport = contentScrollRef.current
-    if (!viewport) return
+    const scrollContainer = getScrollContainer()
+    if (!scrollContainer) return
 
     const handleScroll = () => {
-      setShowScrollTopBtn(viewport.scrollTop >= SCROLL_TOP_BTN_SHOW_PX)
+      setShowScrollTopBtn(scrollContainer.scrollTop >= SCROLL_TOP_BTN_SHOW_PX)
     }
 
-    viewport.addEventListener('scroll', handleScroll, { passive: true })
-    return () => viewport.removeEventListener('scroll', handleScroll)
-  }, [])
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [getScrollContainer])
 
   useEffect(() => {
     if (observerRef.current) {
@@ -259,18 +283,23 @@ export default function RulesWiki() {
 
     const visibleSet = new Set()
     let rafId = null
+    const scrollContainer = getScrollContainer()
+    if (!scrollContainer) return
 
     const updateActive = () => {
       if (visibleSet.size === 0) return
       let best = null
       let bestTop = Infinity
+      const containerRect = scrollContainer.getBoundingClientRect()
+      
       for (const id of orderedNavIds) {
         if (visibleSet.has(id)) {
           const el = document.getElementById(id)
           if (el) {
             const rect = el.getBoundingClientRect()
-            if (rect.top < bestTop) {
-              bestTop = rect.top
+            const relativeTop = rect.top - containerRect.top
+            if (relativeTop < bestTop && relativeTop > -50) {
+              bestTop = relativeTop
               best = id
             }
           }
@@ -299,7 +328,8 @@ export default function RulesWiki() {
         })
       },
       {
-        rootMargin: '-80px 0px -70% 0px',
+        root: scrollContainer,
+        rootMargin: '-60px 0px -70% 0px',
         threshold: 0,
       },
     )
@@ -317,14 +347,20 @@ export default function RulesWiki() {
       }
       if (rafId) cancelAnimationFrame(rafId)
     }
-  }, [orderedNavIds, activeId])
+  }, [orderedNavIds, activeId, getScrollContainer])
 
   useEffect(() => {
-    const nav = tocScrollRef.current
-    if (!nav || !activeId) return
-    const btn = nav.querySelector('.active')
-    if (btn) {
-      btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    if (!sidebarScrollAreaRef.current || !activeId) return
+    const sidebarScroll = sidebarScrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') || 
+                         sidebarScrollAreaRef.current.querySelector('.ant-scroll-viewport') ||
+                         sidebarScrollAreaRef.current
+    const btn = sidebarScrollAreaRef.current.querySelector('.active')
+    if (btn && sidebarScroll) {
+      const btnRect = btn.getBoundingClientRect()
+      const sidebarRect = sidebarScroll.getBoundingClientRect()
+      if (btnRect.top < sidebarRect.top || btnRect.bottom > sidebarRect.bottom) {
+        btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
     }
   }, [activeId])
 
@@ -377,104 +413,116 @@ export default function RulesWiki() {
 
       <div className="wiki-body">
         <div className="wiki-content">
-          <ScrollArea className="wiki-content-scroll" scrollbarProps={{ autoHide: true }}>
-            {showScrollTopBtn && (
-              <Button
-                className="wiki-scroll-top-btn"
-                onClick={scrollContentToTop}
-                icon={<ChevronUp />}
-                size="small"
-                variant="filled"
-              />
-            )}
-            <article className="wiki-article">
-              {sections.map((s) => (
-                <section key={s.id} id={s.id} className="wiki-section">
-                  <MarkdownSection section={s} sharedMd={sharedMd} />
-                </section>
-              ))}
-            </article>
+          <ScrollArea 
+            ref={contentScrollAreaRef}
+            className="wiki-content-scroll" 
+            scrollbarProps={{ autoHide: true }}
+          >
+            <div ref={contentContainerRef} className="wiki-content-inner">
+              {showScrollTopBtn && (
+                <Button
+                  className="wiki-scroll-top-btn"
+                  onClick={scrollContentToTop}
+                  icon={<ChevronUp />}
+                  size="small"
+                  variant="filled"
+                />
+              )}
+              <article className="wiki-article">
+                {sections.map((s) => (
+                  <section key={s.id} id={s.id} className="wiki-section">
+                    <MarkdownSection section={s} sharedMd={sharedMd} />
+                  </section>
+                ))}
+              </article>
+            </div>
           </ScrollArea>
         </div>
 
         <div className="wiki-sidebar">
-          <ScrollArea className="wiki-sidebar-scroll" scrollbarProps={{ autoHide: true }}>
-            <div className="wiki-toc-card">
-              <div className="wiki-toc-header">
-                <span className="wiki-toc-title">目录</span>
+          <ScrollArea 
+            ref={sidebarScrollAreaRef}
+            className="wiki-sidebar-scroll" 
+            scrollbarProps={{ autoHide: true }}
+          >
+            <div className="wiki-sidebar-inner">
+              <div className="wiki-toc-card">
+                <div className="wiki-toc-header">
+                  <span className="wiki-toc-title">目录</span>
+                </div>
+                <RulesWikiTocNav
+                  rows={flatHeadings}
+                  activeId={activeId}
+                  onActivate={scrollContentToId}
+                />
               </div>
-              <RulesWikiTocNav
-                rows={flatHeadings}
-                activeId={activeId}
-                onActivate={scrollContentToId}
-              />
-            </div>
 
-            <div className="wiki-ref-card">
-              <div className="wiki-ref-header">
-                <Link2 size={14} />
-                <span>资料来源</span>
+              <div className="wiki-ref-card">
+                <div className="wiki-ref-header">
+                  <Link2 size={14} />
+                  <span>资料来源</span>
+                </div>
+                <Text className="wiki-ref-desc">
+                  竞技裁定以 Konami 官方数据库为准。
+                </Text>
+                <div className="wiki-ref-links">
+                  {RULE_REFERENCE_SOURCES.slice(0, 3).map((src) => (
+                    <Button
+                      key={src.id}
+                      variant="text"
+                      size="small"
+                      block
+                      className="wiki-ref-btn"
+                      icon={<ExternalLink size={12} />}
+                      onClick={() => openExternal(src.url)}
+                    >
+                      {src.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
-              <Text className="wiki-ref-desc">
-                竞技裁定以 Konami 官方数据库为准。
-              </Text>
-              <div className="wiki-ref-links">
-                {RULE_REFERENCE_SOURCES.slice(0, 3).map((src) => (
+
+              <div className="wiki-ref-card">
+                <div className="wiki-ref-header">
+                  <BookMarked size={14} />
+                  <span>官方规则书</span>
+                </div>
+                <div className="wiki-ref-links">
                   <Button
-                    key={src.id}
                     variant="text"
                     size="small"
                     block
-                    className="wiki-ref-btn"
+                    icon={<FileText size={12} />}
+                    onClick={handleOpenPdf}
+                    disabled={!electron?.getResourcePath}
+                  >
+                    打开本地 PDF
+                  </Button>
+                  <Button
+                    variant="text"
+                    size="small"
+                    block
                     icon={<ExternalLink size={12} />}
-                    onClick={() => openExternal(src.url)}
+                    onClick={() =>
+                      openExternal(
+                        'https://www.yugioh-card.com/eu/wp-content/uploads/2022/07/Rulebook_v9_en.pdf',
+                      )
+                    }
                   >
-                    {src.label}
+                    浏览器下载
                   </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="wiki-ref-card">
-              <div className="wiki-ref-header">
-                <BookMarked size={14} />
-                <span>官方规则书</span>
-              </div>
-              <div className="wiki-ref-links">
-                <Button
-                  variant="text"
-                  size="small"
-                  block
-                  icon={<FileText size={12} />}
-                  onClick={handleOpenPdf}
-                  disabled={!electron?.getResourcePath}
-                >
-                  打开本地 PDF
-                </Button>
-                <Button
-                  variant="text"
-                  size="small"
-                  block
-                  icon={<ExternalLink size={12} />}
-                  onClick={() =>
-                    openExternal(
-                      'https://www.yugioh-card.com/eu/wp-content/uploads/2022/07/Rulebook_v9_en.pdf',
-                    )
-                  }
-                >
-                  浏览器下载
-                </Button>
-                {electron?.getResourcePath && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    block
-                    icon={<FolderOpen size={12} />}
-                    onClick={handleOpenDocsFolder}
-                  >
-                    文档文件夹
-                  </Button>
-                )}
+                  {electron?.getResourcePath && (
+                    <Button
+                      variant="text"
+                      size="small"
+                      block
+                      icon={<FolderOpen size={12} />}
+                      onClick={handleOpenDocsFolder}
+                    >
+                      文档文件夹
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </ScrollArea>
