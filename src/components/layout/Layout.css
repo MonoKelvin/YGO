@@ -39,6 +39,11 @@
   max-width: 100%;
 }
 
+.app-content:has(.wiki-container) {
+  padding: 0;
+  overflow: hidden;
+}
+
 .app-logo-row {
   flex: 0 0 auto;
   display: flex;
