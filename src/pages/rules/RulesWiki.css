@@ -1,4 +1,4 @@
-.wiki-root {
+.wiki-container {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -47,20 +47,26 @@
   flex: 1 1 auto;
   display: flex;
   min-height: 0;
+  overflow: hidden;
 }
 
 .wiki-content {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .wiki-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   height: 100%;
 }
 
 .wiki-body {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-2xl);
   max-width: 900px;
   margin: 0 auto;
 }
@@ -87,11 +93,16 @@
 .wiki-sidebar {
   flex: 0 0 280px;
   width: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-left: 1px solid var(--lobe-color-border);
   background: var(--lobe-color-bg-elevated);
 }
 
 .wiki-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   height: 100%;
 }
 
@@ -174,7 +185,12 @@
   color: var(--lobe-color-primary);
 }
 
+.wiki-toc-btn.depth-2 {
+  padding-left: 24px;
+}
+
 .wiki-toc-btn.depth-3 {
+  padding-left: 40px;
   font-size: calc(var(--font-size-sm) - 1px);
   color: var(--lobe-color-text-3);
 }
@@ -185,7 +201,7 @@
 
 .wiki-toc-marker {
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .marker-dot {
@@ -205,7 +221,7 @@
   width: 12px;
   height: 2px;
   background: var(--lobe-color-border);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .wiki-toc-btn.active .marker-dash {
@@ -257,6 +273,7 @@
   color: var(--lobe-color-text);
   background: linear-gradient(90deg, var(--lobe-color-primary-bg) 0%, transparent 100%);
   border-left: 4px solid var(--lobe-color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .wiki-h2 {
@@ -267,6 +284,7 @@
   color: var(--lobe-color-text);
   background: var(--lobe-color-fill-quaternary);
   border-left: 3px solid var(--lobe-color-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .wiki-h3 {
@@ -298,6 +316,10 @@
   color: var(--lobe-color-text);
 }
 
+.wiki-li::marker {
+  color: var(--lobe-color-primary);
+}
+
 .wiki-blockquote {
   margin: 0 0 var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-lg);
@@ -306,6 +328,7 @@
   color: var(--lobe-color-text-2);
   background: var(--lobe-color-fill-secondary);
   border-left: 4px solid var(--lobe-color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .wiki-blockquote p {
@@ -318,7 +341,7 @@
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   background: var(--lobe-color-fill-tertiary);
-  color: var(--lobe-color-text);
+  color: var(--lobe-color-primary);
 }
 
 .wiki-pre {
@@ -367,6 +390,10 @@
   border-bottom: none;
 }
 
+.wiki-table tr:hover td {
+  background: var(--lobe-color-fill-hover);
+}
+
 .wiki-link {
   color: var(--lobe-color-primary);
   text-decoration: none;
@@ -376,6 +403,7 @@
 
 .wiki-link:hover {
   border-bottom-color: var(--lobe-color-primary);
+  background: var(--lobe-color-primary-bg);
 }
 
 .wiki-hr {

@@ -113,7 +113,7 @@ function MarkdownSection({ section }) {
   )
 }
 
-function TocButton({ item, isActive, onClick }) {
+function TocItem({ item, isActive, onClick }) {
   const indentStyle = { paddingLeft: `${(item.depth - 1) * 16 + 8}px` }
   
   return (
@@ -138,6 +138,7 @@ export default function RulesWiki() {
   const contentRef = useRef(null)
   const sidebarRef = useRef(null)
   const observerRef = useRef(null)
+  const isScrollingRef = useRef(false)
   
   const sectionsWithHeadings = useMemo(
     () => RULE_SECTIONS.map((s) => ({ ...s, headings: extractHeadings(s.id, s.md) })),
@@ -158,45 +159,59 @@ export default function RulesWiki() {
   }, [sectionsWithHeadings])
 
   const allHeadingIds = useMemo(() => tocItems.map((item) => item.id), [tocItems])
-  const [activeId, setActiveId] = useState(allHeadingIds[0] || null)
+  const [activeId, setActiveId] = useState(() => allHeadingIds[0] || null)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
+  const getScrollViewport = useCallback((ref) => {
+    if (!ref.current) return null
+    return (
+      ref.current.querySelector('[data-radix-scroll-area-viewport]') ||
+      ref.current.querySelector('[class*="ScrollAreaViewport"]') ||
+      ref.current
+    )
+  }, [])
+
   const scrollToElement = useCallback((id) => {
-    const contentScroll = contentRef.current?.querySelector('[data-radix-scroll-area-viewport]') || contentRef.current
-    if (!contentScroll) return
+    const viewport = getScrollViewport(contentRef)
+    if (!viewport) return
 
     const el = document.getElementById(id)
     if (!el) return
 
-    const contentRect = contentScroll.getBoundingClientRect()
+    isScrollingRef.current = true
+    const viewportRect = viewport.getBoundingClientRect()
     const elRect = el.getBoundingClientRect()
-    const scrollTop = contentScroll.scrollTop + (elRect.top - contentRect.top) - 20
+    const scrollTop = viewport.scrollTop + (elRect.top - viewportRect.top) - 24
 
-    contentScroll.scrollTo({ top: scrollTop, behavior: 'smooth' })
-  }, [])
+    viewport.scrollTo({ top: scrollTop, behavior: 'smooth' })
+    
+    setTimeout(() => {
+      isScrollingRef.current = false
+    }, 500)
+  }, [getScrollViewport])
 
   const scrollToTop = useCallback(() => {
-    const contentScroll = contentRef.current?.querySelector('[data-radix-scroll-area-viewport]') || contentRef.current
-    if (contentScroll) {
-      contentScroll.scrollTo({ top: 0, behavior: 'smooth' })
+    const viewport = getScrollViewport(contentRef)
+    if (viewport) {
+      viewport.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [])
+  }, [getScrollViewport])
 
   useEffect(() => {
-    const contentScroll = contentRef.current?.querySelector('[data-radix-scroll-area-viewport]') || contentRef.current
-    if (!contentScroll) return
+    const viewport = getScrollViewport(contentRef)
+    if (!viewport) return
 
     const handleScroll = () => {
-      setShowScrollTop(contentScroll.scrollTop >= 200)
+      setShowScrollTop(viewport.scrollTop >= 200)
     }
 
-    contentScroll.addEventListener('scroll', handleScroll, { passive: true })
-    return () => contentScroll.removeEventListener('scroll', handleScroll)
-  }, [])
+    viewport.addEventListener('scroll', handleScroll, { passive: true })
+    return () => viewport.removeEventListener('scroll', handleScroll)
+  }, [getScrollViewport])
 
   useEffect(() => {
-    const contentScroll = contentRef.current?.querySelector('[data-radix-scroll-area-viewport]') || contentRef.current
-    if (!contentScroll) return
+    const viewport = getScrollViewport(contentRef)
+    if (!viewport) return
 
     if (observerRef.current) {
       observerRef.current.disconnect()
@@ -204,6 +219,8 @@ export default function RulesWiki() {
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
+        if (isScrollingRef.current) return
+
         let visibleHeading = null
         let minTop = Infinity
 
@@ -222,8 +239,8 @@ export default function RulesWiki() {
         }
       },
       {
-        root: contentScroll,
-        rootMargin: '-20px 0px -70% 0px',
+        root: viewport,
+        rootMargin: '-24px 0px -70% 0px',
         threshold: 0.1,
       }
     )
@@ -236,22 +253,22 @@ export default function RulesWiki() {
     return () => {
       if (observerRef.current) observerRef.current.disconnect()
     }
-  }, [allHeadingIds, activeId])
+  }, [allHeadingIds, activeId, getScrollViewport])
 
   useEffect(() => {
     if (!activeId) return
-    const sidebarScroll = sidebarRef.current?.querySelector('[data-radix-scroll-area-viewport]') || sidebarRef.current
+    const sidebarViewport = getScrollViewport(sidebarRef)
     const activeBtn = sidebarRef.current?.querySelector('.wiki-toc-btn.active')
     
-    if (activeBtn && sidebarScroll) {
+    if (activeBtn && sidebarViewport) {
       const btnRect = activeBtn.getBoundingClientRect()
-      const sidebarRect = sidebarScroll.getBoundingClientRect()
+      const sidebarRect = sidebarViewport.getBoundingClientRect()
       
       if (btnRect.top < sidebarRect.top + 30 || btnRect.bottom > sidebarRect.bottom - 30) {
         activeBtn.scrollIntoView({ block: 'center', behavior: 'smooth' })
       }
     }
-  }, [activeId])
+  }, [activeId, getScrollViewport])
 
   const handleOpenPdf = async () => {
     if (!electron?.getResourcePath || !electron?.openPathInExplorer) return
@@ -278,7 +295,7 @@ export default function RulesWiki() {
   const openExternal = (url) => window.open(url, '_blank', 'noopener,noreferrer')
 
   return (
-    <div className="wiki-root">
+    <div className="wiki-container">
       <header className="wiki-header">
         <div className="wiki-header-inner">
           <div className="wiki-title">
@@ -318,7 +335,7 @@ export default function RulesWiki() {
                 </div>
                 <nav className="wiki-toc">
                   {tocItems.map((item) => (
-                    <TocButton
+                    <TocItem
                       key={item.id}
                       item={item}
                       isActive={activeId === item.id}
