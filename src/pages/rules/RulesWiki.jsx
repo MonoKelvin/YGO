@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { ScrollArea, Text, Button, Flexbox } from '@lobehub/ui'
+import { ScrollArea, Text, Button } from '@lobehub/ui'
 import {
   ExternalLink,
   FileText,
@@ -9,6 +9,7 @@ import {
   BookOpen,
   BookMarked,
   ChevronUp,
+  ChevronRight,
 } from 'lucide-react'
 import mdEncyclopedia from '../../assets/docs/rules/00-encyclopedia-intro.zh.md?raw'
 import mdBeginner from '../../assets/docs/rules/01-beginner.zh.md?raw'
@@ -29,48 +30,62 @@ const RULE_SECTIONS_RAW = [
   {
     id: 'part-encyclopedia',
     title: '百科引言',
-    subtitle: 'IP、资料站与外链索引',
     md: mdEncyclopedia,
   },
   {
     id: 'part-beginner',
     title: '入门',
-    subtitle: '先读这段就能开局',
     md: mdBeginner,
   },
   {
     id: 'part-core',
     title: '基础',
-    subtitle: '卡组、区域与胜负',
     md: mdCore,
   },
   {
     id: 'part-advanced',
     title: '进阶',
-    subtitle: '回合、召唤、战斗与连锁入门',
     md: mdAdvanced,
   },
   {
     id: 'part-detailed',
     title: '深入',
-    subtitle: '大师规则与竞技提示',
     md: mdDetailed,
   },
 ]
 
-function extractSectionH2Nav(sectionId, md) {
+function extractHeadings(sectionId, md) {
   try {
     const tree = unified().use(remarkParse).use(remarkGfm).parse(md || '')
-    const h2s = []
-    let i = 0
+    const headings = []
+    let h1Counter = 0
+    let h2Counter = 0
+    let h3Counter = 0
+    
     visit(tree, 'heading', (node) => {
-      if (node.depth !== 2) return
-      h2s.push({
-        id: `${sectionId}__h${i++}`,
-        title: toString(node).trim(),
-      })
+      const title = toString(node).trim()
+      if (node.depth === 1) {
+        headings.push({
+          id: sectionId,
+          title,
+          depth: 1,
+        })
+        h1Counter++
+      } else if (node.depth === 2) {
+        headings.push({
+          id: `${sectionId}__h2-${h2Counter++}`,
+          title,
+          depth: 2,
+        })
+      } else if (node.depth === 3) {
+        headings.push({
+          id: `${sectionId}__h3-${h3Counter++}`,
+          title,
+          depth: 3,
+        })
+      }
     })
-    return h2s
+    return headings
   } catch (e) {
     console.error('[RulesWiki] 目录解析失败', sectionId, e)
     return []
@@ -80,13 +95,24 @@ function extractSectionH2Nav(sectionId, md) {
 function remarkHeadingIds(sectionId) {
   return (tree) => {
     try {
-      let i = 0
+      let h2Counter = 0
+      let h3Counter = 0
       visit(tree, 'heading', (node) => {
-        if (node.depth !== 2) return
-        const id = `${sectionId}__h${i++}`
-        node.data ??= {}
-        node.data.hProperties ??= {}
-        node.data.hProperties.id = id
+        if (node.depth === 1) {
+          node.data ??= {}
+          node.data.hProperties ??= {}
+          node.data.hProperties.id = sectionId
+        } else if (node.depth === 2) {
+          const id = `${sectionId}__h2-${h2Counter++}`
+          node.data ??= {}
+          node.data.hProperties ??= {}
+          node.data.hProperties.id = id
+        } else if (node.depth === 3) {
+          const id = `${sectionId}__h3-${h3Counter++}`
+          node.data ??= {}
+          node.data.hProperties ??= {}
+          node.data.hProperties.id = id
+        }
       })
     } catch (e) {
       console.error('[RulesWiki] remarkHeadingIds', sectionId, e)
@@ -146,13 +172,21 @@ function MarkdownSection({ section, sharedMd }) {
   const components = useMemo(
     () => ({
       ...sharedMd,
-      h1: ({ children }) => <h1 className="wiki-h1">{children}</h1>,
-      h2: ({ children, id, className }) => (
-        <h2 id={id} className={['wiki-h2', className].filter(Boolean).join(' ')}>
+      h1: ({ children, id }) => (
+        <h1 id={id} className="wiki-h1">
+          {children}
+        </h1>
+      ),
+      h2: ({ children, id }) => (
+        <h2 id={id} className="wiki-h2">
           {children}
         </h2>
       ),
-      h3: ({ children }) => <h3 className="wiki-h3">{children}</h3>,
+      h3: ({ children, id }) => (
+        <h3 id={id} className="wiki-h3">
+          {children}
+        </h3>
+      ),
     }),
     [sharedMd],
   )
@@ -164,177 +198,195 @@ function MarkdownSection({ section, sharedMd }) {
   )
 }
 
-function RulesWikiTocNav({ rows, activeId, onActivate }) {
+function TocItem({ item, activeId, onActivate, level = 0 }) {
+  const isActive = activeId === item.id
+  const hasChildren = item.children && item.children.length > 0
+  
   return (
-    <nav className="wiki-toc-nav" aria-label="章节列表">
-      {rows.map((row) => {
-        const active = activeId === row.id
-        const base = row.kind === 'part' ? 'wiki-toc-part' : 'wiki-toc-item'
-        return (
-          <button
-            key={`${row.kind}-${row.id}`}
-            type="button"
-            title={row.kind === 'part' ? row.hint : undefined}
-            className={`${base}${active ? ' active' : ''}`}
-            onClick={() => onActivate(row.id)}
-          >
-            {row.label}
-          </button>
-        )
-      })}
-    </nav>
+    <div className="wiki-toc-group">
+      <button
+        type="button"
+        className={`wiki-toc-item depth-${item.depth}${isActive ? ' active' : ''}`}
+        onClick={() => onActivate(item.id)}
+        style={{ paddingLeft: `${12 + level * 12}px` }}
+      >
+        {item.depth === 1 && <span className="wiki-toc-dot" />}
+        {item.depth === 2 && <ChevronRight size={12} className="wiki-toc-chevron" />}
+        {item.depth === 3 && <span className="wiki-toc-line" />}
+        <span className="wiki-toc-text">{item.title}</span>
+      </button>
+      {hasChildren && (
+        <div className="wiki-toc-children">
+          {item.children.map((child) => (
+            <TocItem
+              key={child.id}
+              item={child}
+              activeId={activeId}
+              onActivate={onActivate}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
 export default function RulesWiki() {
   const electron = typeof window !== 'undefined' ? window.electronAPI : null
-  const contentScrollAreaRef = useRef(null)
-  const sidebarScrollAreaRef = useRef(null)
-  const contentContainerRef = useRef(null)
+  const contentViewportRef = useRef(null)
+  const sidebarViewportRef = useRef(null)
   const observerRef = useRef(null)
+  const isScrollingRef = useRef(false)
 
   const sections = useMemo(
     () =>
       RULE_SECTIONS_RAW.map((s) => ({
         ...s,
-        h2s: extractSectionH2Nav(s.id, s.md),
+        headings: extractHeadings(s.id, s.md),
       })),
-    [mdEncyclopedia, mdBeginner, mdCore, mdAdvanced, mdDetailed],
+    [],
   )
 
   const sharedMd = useMemo(() => createSharedMdComponents(), [])
 
-  const flatHeadings = useMemo(() => {
-    const rows = []
+  const tocTree = useMemo(() => {
+    const tree = []
     for (const s of sections) {
-      rows.push({
-        kind: 'part',
+      const sectionNode = {
         id: s.id,
-        label: s.title,
-        hint: s.subtitle,
-      })
-      for (const h of s.h2s) {
-        rows.push({
-          kind: 'h2',
-          id: h.id,
-          label: h.title,
-        })
+        title: s.title,
+        depth: 1,
+        children: [],
       }
+      
+      let currentH2 = null
+      for (const h of s.headings) {
+        if (h.depth === 1) {
+          sectionNode.title = h.title
+        } else if (h.depth === 2) {
+          currentH2 = { ...h, children: [] }
+          sectionNode.children.push(currentH2)
+        } else if (h.depth === 3 && currentH2) {
+          currentH2.children.push(h)
+        }
+      }
+      tree.push(sectionNode)
     }
-    return rows
+    return tree
   }, [sections])
 
-  const orderedNavIds = useMemo(() => flatHeadings.map((r) => r.id), [flatHeadings])
+  const allHeadingIds = useMemo(() => {
+    const ids = []
+    for (const section of sections) {
+      for (const h of section.headings) {
+        ids.push(h.id)
+      }
+    }
+    return ids
+  }, [sections])
 
-  const [activeId, setActiveId] = useState(() => orderedNavIds[0] ?? null)
+  const [activeId, setActiveId] = useState(() => allHeadingIds[0] ?? null)
   const [showScrollTopBtn, setShowScrollTopBtn] = useState(false)
 
-  const getScrollContainer = useCallback(() => {
-    if (!contentScrollAreaRef.current) return null
-    const el = contentScrollAreaRef.current
-    const viewport = el.querySelector('[data-radix-scroll-area-viewport]') || el.querySelector('.ant-scroll-viewport') || el
-    return viewport
+  const findScrollableViewport = useCallback((scrollAreaRef) => {
+    if (!scrollAreaRef.current) return null
+    const el = scrollAreaRef.current
+    return (
+      el.querySelector('[data-radix-scroll-area-viewport]') ||
+      el.querySelector('.ant-scroll-viewport') ||
+      el
+    )
   }, [])
 
-  const scrollContentToId = useCallback((id) => {
-    requestAnimationFrame(() => {
-      const el = document.getElementById(id)
-      const scrollContainer = getScrollContainer()
-      if (!el || !scrollContainer) return
+  const scrollToHeading = useCallback((id) => {
+    const viewport = findScrollableViewport(contentViewportRef)
+    if (!viewport) return
 
-      const containerRect = scrollContainer.getBoundingClientRect()
-      const elRect = el.getBoundingClientRect()
-      
-      const scrollTop = scrollContainer.scrollTop + (elRect.top - containerRect.top) - 20
-      
-      scrollContainer.scrollTo({
-        top: scrollTop,
-        behavior: 'smooth'
-      })
+    const el = document.getElementById(id)
+    if (!el) return
+
+    isScrollingRef.current = true
+    
+    const viewportRect = viewport.getBoundingClientRect()
+    const elRect = el.getBoundingClientRect()
+    const scrollTop = viewport.scrollTop + (elRect.top - viewportRect.top) - 24
+
+    viewport.scrollTo({
+      top: scrollTop,
+      behavior: 'smooth',
     })
-  }, [getScrollContainer])
 
-  const scrollContentToTop = useCallback(() => {
-    const scrollContainer = getScrollContainer()
-    if (scrollContainer) {
-      scrollContainer.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      })
+    setTimeout(() => {
+      isScrollingRef.current = false
+    }, 500)
+  }, [findScrollableViewport])
+
+  const scrollToTop = useCallback(() => {
+    const viewport = findScrollableViewport(contentViewportRef)
+    if (viewport) {
+      viewport.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [getScrollContainer])
+  }, [findScrollableViewport])
 
   useEffect(() => {
-    const scrollContainer = getScrollContainer()
-    if (!scrollContainer) return
+    const viewport = findScrollableViewport(contentViewportRef)
+    if (!viewport) return
 
     const handleScroll = () => {
-      setShowScrollTopBtn(scrollContainer.scrollTop >= SCROLL_TOP_BTN_SHOW_PX)
+      setShowScrollTopBtn(viewport.scrollTop >= SCROLL_TOP_BTN_SHOW_PX)
     }
 
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
-    return () => scrollContainer.removeEventListener('scroll', handleScroll)
-  }, [getScrollContainer])
+    viewport.addEventListener('scroll', handleScroll, { passive: true })
+    return () => viewport.removeEventListener('scroll', handleScroll)
+  }, [findScrollableViewport])
 
   useEffect(() => {
+    const viewport = findScrollableViewport(contentViewportRef)
+    if (!viewport) return
+
     if (observerRef.current) {
       observerRef.current.disconnect()
     }
 
-    const visibleSet = new Set()
-    let rafId = null
-    const scrollContainer = getScrollContainer()
-    if (!scrollContainer) return
-
-    const updateActive = () => {
-      if (visibleSet.size === 0) return
-      let best = null
-      let bestTop = Infinity
-      const containerRect = scrollContainer.getBoundingClientRect()
-      
-      for (const id of orderedNavIds) {
-        if (visibleSet.has(id)) {
-          const el = document.getElementById(id)
-          if (el) {
-            const rect = el.getBoundingClientRect()
-            const relativeTop = rect.top - containerRect.top
-            if (relativeTop < bestTop && relativeTop > -50) {
-              bestTop = relativeTop
-              best = id
-            }
-          }
-        }
-      }
-      if (best && best !== activeId) {
-        setActiveId(best)
-      }
-    }
+    const visibleHeadings = new Map()
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
+        if (isScrollingRef.current) return
+
         for (const entry of entries) {
-          if (entry.target.id) {
-            if (entry.isIntersecting) {
-              visibleSet.add(entry.target.id)
-            } else {
-              visibleSet.delete(entry.target.id)
-            }
+          if (entry.isIntersecting) {
+            visibleHeadings.set(entry.target.id, entry.boundingClientRect.top)
+          } else {
+            visibleHeadings.delete(entry.target.id)
           }
         }
-        if (rafId) cancelAnimationFrame(rafId)
-        rafId = requestAnimationFrame(() => {
-          rafId = null
-          updateActive()
-        })
+
+        if (visibleHeadings.size > 0) {
+          let topmostId = null
+          let topmostTop = Infinity
+
+          for (const [id, top] of visibleHeadings) {
+            if (top < topmostTop && top > -100) {
+              topmostTop = top
+              topmostId = id
+            }
+          }
+
+          if (topmostId && topmostId !== activeId) {
+            setActiveId(topmostId)
+          }
+        }
       },
       {
-        root: scrollContainer,
-        rootMargin: '-60px 0px -70% 0px',
+        root: viewport,
+        rootMargin: '-24px 0px -80% 0px',
         threshold: 0,
-      },
+      }
     )
 
-    for (const id of orderedNavIds) {
+    for (const id of allHeadingIds) {
       const el = document.getElementById(id)
       if (el) {
         observerRef.current.observe(el)
@@ -345,30 +397,23 @@ export default function RulesWiki() {
       if (observerRef.current) {
         observerRef.current.disconnect()
       }
-      if (rafId) cancelAnimationFrame(rafId)
     }
-  }, [orderedNavIds, activeId, getScrollContainer])
+  }, [allHeadingIds, activeId, findScrollableViewport])
 
   useEffect(() => {
-    if (!sidebarScrollAreaRef.current || !activeId) return
-    const sidebarScroll = sidebarScrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') || 
-                         sidebarScrollAreaRef.current.querySelector('.ant-scroll-viewport') ||
-                         sidebarScrollAreaRef.current
-    const btn = sidebarScrollAreaRef.current.querySelector('.active')
-    if (btn && sidebarScroll) {
-      const btnRect = btn.getBoundingClientRect()
-      const sidebarRect = sidebarScroll.getBoundingClientRect()
-      if (btnRect.top < sidebarRect.top || btnRect.bottom > sidebarRect.bottom) {
-        btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    const sidebarViewport = findScrollableViewport(sidebarViewportRef)
+    if (!sidebarViewport || !activeId) return
+
+    const activeBtn = sidebarViewportRef.current?.querySelector('.wiki-toc-item.active')
+    if (activeBtn) {
+      const btnRect = activeBtn.getBoundingClientRect()
+      const viewportRect = sidebarViewport.getBoundingClientRect()
+      
+      if (btnRect.top < viewportRect.top + 50 || btnRect.bottom > viewportRect.bottom - 50) {
+        activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
       }
     }
-  }, [activeId])
-
-  useEffect(() => {
-    setActiveId((prev) =>
-      orderedNavIds.includes(prev) ? prev : orderedNavIds[0] ?? null,
-    )
-  }, [orderedNavIds])
+  }, [activeId, findScrollableViewport])
 
   const handleOpenPdf = async () => {
     if (!electron?.getResourcePath || !electron?.openPathInExplorer) return
@@ -400,61 +445,68 @@ export default function RulesWiki() {
   }
 
   return (
-    <Flexbox className="wiki-container">
+    <div className="wiki-container">
       <div className="wiki-header">
-        <div className="wiki-header-title">
-          <BookOpen size={20} />
-          <h1>规则百科</h1>
+        <div className="wiki-header-inner">
+          <div className="wiki-header-title">
+            <BookOpen size={22} />
+            <h1>规则百科</h1>
+          </div>
+          <Text className="wiki-header-desc">
+            游戏王规则由浅入深：入门 → 基础 → 进阶 → 深入。竞技裁定以 Konami 官方数据库为准。
+          </Text>
         </div>
-        <Text className="wiki-header-desc">
-          游戏王打牌规则由浅入深：入门 → 基础 → 进阶 → 深入。细则以 Konami 官方数据库为准。
-        </Text>
       </div>
 
       <div className="wiki-body">
         <div className="wiki-content">
-          <ScrollArea 
-            ref={contentScrollAreaRef}
-            className="wiki-content-scroll" 
+          <ScrollArea
+            ref={contentViewportRef}
+            className="wiki-content-scroll"
             scrollbarProps={{ autoHide: true }}
           >
-            <div ref={contentContainerRef} className="wiki-content-inner">
-              {showScrollTopBtn && (
-                <Button
-                  className="wiki-scroll-top-btn"
-                  onClick={scrollContentToTop}
-                  icon={<ChevronUp />}
-                  size="small"
-                  variant="filled"
-                />
-              )}
-              <article className="wiki-article">
-                {sections.map((s) => (
-                  <section key={s.id} id={s.id} className="wiki-section">
-                    <MarkdownSection section={s} sharedMd={sharedMd} />
-                  </section>
-                ))}
-              </article>
-            </div>
+            <article className="wiki-article">
+              {sections.map((s) => (
+                <section key={s.id} className="wiki-section">
+                  <MarkdownSection section={s} sharedMd={sharedMd} />
+                </section>
+              ))}
+            </article>
           </ScrollArea>
+          
+          {showScrollTopBtn && (
+            <Button
+              className="wiki-scroll-top-btn"
+              onClick={scrollToTop}
+              icon={<ChevronUp />}
+              size="small"
+              variant="filled"
+            />
+          )}
         </div>
 
         <div className="wiki-sidebar">
-          <ScrollArea 
-            ref={sidebarScrollAreaRef}
-            className="wiki-sidebar-scroll" 
+          <ScrollArea
+            ref={sidebarViewportRef}
+            className="wiki-sidebar-scroll"
             scrollbarProps={{ autoHide: true }}
           >
             <div className="wiki-sidebar-inner">
               <div className="wiki-toc-card">
                 <div className="wiki-toc-header">
-                  <span className="wiki-toc-title">目录</span>
+                  <BookMarked size={14} />
+                  <span>目录</span>
                 </div>
-                <RulesWikiTocNav
-                  rows={flatHeadings}
-                  activeId={activeId}
-                  onActivate={scrollContentToId}
-                />
+                <nav className="wiki-toc-nav">
+                  {tocTree.map((section) => (
+                    <TocItem
+                      key={section.id}
+                      item={section}
+                      activeId={activeId}
+                      onActivate={scrollToHeading}
+                    />
+                  ))}
+                </nav>
               </div>
 
               <div className="wiki-ref-card">
@@ -484,7 +536,7 @@ export default function RulesWiki() {
 
               <div className="wiki-ref-card">
                 <div className="wiki-ref-header">
-                  <BookMarked size={14} />
+                  <FileText size={14} />
                   <span>官方规则书</span>
                 </div>
                 <div className="wiki-ref-links">
@@ -505,7 +557,7 @@ export default function RulesWiki() {
                     icon={<ExternalLink size={12} />}
                     onClick={() =>
                       openExternal(
-                        'https://www.yugioh-card.com/eu/wp-content/uploads/2022/07/Rulebook_v9_en.pdf',
+                        'https://www.yugioh-card.com/eu/wp-content/uploads/2022/07/Rulebook_v9_en.pdf'
                       )
                     }
                   >
@@ -528,6 +580,6 @@ export default function RulesWiki() {
           </ScrollArea>
         </div>
       </div>
-    </Flexbox>
+    </div>
   )
 }
