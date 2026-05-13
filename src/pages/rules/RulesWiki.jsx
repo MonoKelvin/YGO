@@ -135,8 +135,8 @@ function TocItem({ item, isActive, onClick }) {
 
 export default function RulesWiki() {
   const electron = typeof window !== 'undefined' ? window.electronAPI : null
-  const contentRef = useRef(null)
-  const sidebarRef = useRef(null)
+  const contentViewportRef = useRef(null)
+  const sidebarViewportRef = useRef(null)
   const observerRef = useRef(null)
   const isScrollingRef = useRef(false)
   
@@ -162,56 +162,42 @@ export default function RulesWiki() {
   const [activeId, setActiveId] = useState(() => allHeadingIds[0] || null)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
-  const getScrollViewport = useCallback((ref) => {
-    if (!ref.current) return null
-    return (
-      ref.current.querySelector('[data-radix-scroll-area-viewport]') ||
-      ref.current.querySelector('[class*="ScrollAreaViewport"]') ||
-      ref.current
-    )
-  }, [])
-
   const scrollToElement = useCallback((id) => {
-    const viewport = getScrollViewport(contentRef)
-    if (!viewport) return
-
+    if (!contentViewportRef.current) return
     const el = document.getElementById(id)
     if (!el) return
 
     isScrollingRef.current = true
-    const viewportRect = viewport.getBoundingClientRect()
+    const viewportRect = contentViewportRef.current.getBoundingClientRect()
     const elRect = el.getBoundingClientRect()
-    const scrollTop = viewport.scrollTop + (elRect.top - viewportRect.top) - 24
+    const scrollTop = contentViewportRef.current.scrollTop + (elRect.top - viewportRect.top) - 24
 
-    viewport.scrollTo({ top: scrollTop, behavior: 'smooth' })
+    contentViewportRef.current.scrollTo({ top: scrollTop, behavior: 'smooth' })
     
     setTimeout(() => {
       isScrollingRef.current = false
     }, 500)
-  }, [getScrollViewport])
+  }, [])
 
   const scrollToTop = useCallback(() => {
-    const viewport = getScrollViewport(contentRef)
-    if (viewport) {
-      viewport.scrollTo({ top: 0, behavior: 'smooth' })
+    if (contentViewportRef.current) {
+      contentViewportRef.current.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [getScrollViewport])
+  }, [])
 
   useEffect(() => {
-    const viewport = getScrollViewport(contentRef)
-    if (!viewport) return
+    if (!contentViewportRef.current) return
 
     const handleScroll = () => {
-      setShowScrollTop(viewport.scrollTop >= 200)
+      setShowScrollTop(contentViewportRef.current.scrollTop >= 200)
     }
 
-    viewport.addEventListener('scroll', handleScroll, { passive: true })
-    return () => viewport.removeEventListener('scroll', handleScroll)
-  }, [getScrollViewport])
+    contentViewportRef.current.addEventListener('scroll', handleScroll, { passive: true })
+    return () => contentViewportRef.current.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
-    const viewport = getScrollViewport(contentRef)
-    if (!viewport) return
+    if (!contentViewportRef.current) return
 
     if (observerRef.current) {
       observerRef.current.disconnect()
@@ -239,7 +225,7 @@ export default function RulesWiki() {
         }
       },
       {
-        root: viewport,
+        root: contentViewportRef.current,
         rootMargin: '-24px 0px -70% 0px',
         threshold: 0.1,
       }
@@ -253,22 +239,21 @@ export default function RulesWiki() {
     return () => {
       if (observerRef.current) observerRef.current.disconnect()
     }
-  }, [allHeadingIds, activeId, getScrollViewport])
+  }, [allHeadingIds, activeId])
 
   useEffect(() => {
-    if (!activeId) return
-    const sidebarViewport = getScrollViewport(sidebarRef)
-    const activeBtn = sidebarRef.current?.querySelector('.wiki-toc-btn.active')
+    if (!activeId || !sidebarViewportRef.current) return
+    const activeBtn = sidebarViewportRef.current.querySelector('.wiki-toc-btn.active')
     
-    if (activeBtn && sidebarViewport) {
+    if (activeBtn) {
       const btnRect = activeBtn.getBoundingClientRect()
-      const sidebarRect = sidebarViewport.getBoundingClientRect()
+      const sidebarRect = sidebarViewportRef.current.getBoundingClientRect()
       
       if (btnRect.top < sidebarRect.top + 30 || btnRect.bottom > sidebarRect.bottom - 30) {
         activeBtn.scrollIntoView({ block: 'center', behavior: 'smooth' })
       }
     }
-  }, [activeId, getScrollViewport])
+  }, [activeId])
 
   const handleOpenPdf = async () => {
     if (!electron?.getResourcePath || !electron?.openPathInExplorer) return
@@ -297,21 +282,19 @@ export default function RulesWiki() {
   return (
     <div className="wiki-container">
       <header className="wiki-header">
-        <div className="wiki-header-inner">
-          <div className="wiki-title">
-            <BookOpen size={22} />
-            <h1>规则百科</h1>
-          </div>
-          <Text className="wiki-subtitle">
-            游戏王规则由浅入深：入门 → 基础 → 进阶 → 深入。竞技裁定以 Konami 官方数据库为准。
-          </Text>
+        <div className="wiki-title">
+          <BookOpen size={22} />
+          <h1>规则百科</h1>
         </div>
+        <Text className="wiki-subtitle">
+          游戏王规则由浅入深：入门 → 基础 → 进阶 → 深入。竞技裁定以 Konami 官方数据库为准。
+        </Text>
       </header>
 
-      <div className="wiki-main">
+      <div className="wiki-body">
         <main className="wiki-content">
-          <ScrollArea ref={contentRef} className="wiki-scroll">
-            <div className="wiki-body">
+          <ScrollArea viewportRef={contentViewportRef} className="wiki-scroll-area">
+            <div className="wiki-content-inner">
               {sectionsWithHeadings.map((section) => (
                 <section key={section.id} className="wiki-section">
                   <MarkdownSection section={section} />
@@ -326,7 +309,7 @@ export default function RulesWiki() {
         </main>
 
         <aside className="wiki-sidebar">
-          <ScrollArea ref={sidebarRef} className="wiki-sidebar-scroll">
+          <ScrollArea viewportRef={sidebarViewportRef} className="wiki-sidebar-scroll-area">
             <div className="wiki-sidebar-inner">
               <div className="wiki-card">
                 <div className="wiki-card-header">
