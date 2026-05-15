@@ -9,9 +9,11 @@
     "dev": "concurrently -k -n \"vite,electron\" -c \"cyan,magenta\" \"npm run vite:dev\" \"npm run electron:dev\"",
     "desktop:dev": "npm run dev",
     "renderer:dev": "npm run vite:dev",
-    "build": "vite build && node copy-assets.js",
-    "desktop:build": "npm run build && electron-builder",
-    "desktop:pack": "npm run build && electron-builder --dir",
+    "build": "cross-env NODE_ENV=production vite build --mode production && node copy-assets.js",
+    "desktop:build": "npm run icons:prepare && npm run build && electron-builder",
+    "desktop:pack": "npm run icons:prepare && npm run build && electron-builder --dir",
+    "package:release": "node scripts/package-release.mjs",
+    "icons:prepare": "node scripts/ensure-app-icons.mjs",
     "start": "npm run dev",
     "mold:check": "node scripts/mold-check.mjs",
     "cards:fetch": "node scripts/fetch-ygoprodeck.mjs",
@@ -48,12 +50,17 @@
     "cross-env": "^7.0.3",
     "electron": "^32.1.2",
     "electron-builder": "^24.13.3",
+    "rcedit": "^5.0.2",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
     "vite": "^5.4.11",
     "wait-on": "^8.0.3"
   },
   "build": {
     "appId": "com.ygo.app",
     "productName": "YGO",
+    "compression": "maximum",
+    "asar": true,
     "directories": {
       "output": "dist_electron",
       "buildResources": "build"
@@ -76,6 +83,7 @@
         ]
       }
     ],
+    "afterPack": "./scripts/after-pack-win-icon.cjs",
     "win": {
       "target": [
         {
@@ -86,17 +94,41 @@
         }
       ],
       "signAndEditExecutable": false,
-      "icon": "src/assets/app/logo-256x256.png"
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.games",
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility",
+      "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
+      "perMachine": true,
       "allowElevation": true,
-      "installerIcon": "src/assets/app/logo-256x256.png",
-      "uninstallerIcon": "src/assets/app/logo-256x256.png",
-      "installerHeaderIcon": "src/assets/app/logo-256x256.png",
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "YGO"
+      "shortcutName": "YGO",
+      "runAfterFinish": true,
+      "license": "LICENSE",
+      "warningsAsErrors": true,
+      "unicode": true,
+      "language": "2052",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "artifactName": "ygo-setup-${version}.${ext}"
     }
   },
   "type": "module"

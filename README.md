@@ -77,9 +77,22 @@ npm run dev
 ### 构建与打包
 
 ```bash
-npm run build          # 仅 Vite 产出 dist + copy-assets
-npm run desktop:build  # build + electron-builder（Windows 安装包等）
+npm run build              # 生产构建：Vite（NODE_ENV=production）+ copy-assets
+npm run desktop:build      # build + electron-builder（当前平台默认目标）
+npm run package:release    # 推荐：一键发布包（见下）
 ```
+
+**一键发布安装包**（与 `desktop:build` 相比会固定生产环境、准备图标、校验产物并列出 `dist_electron`）：
+
+- 命令行：`npm run package:release` 或 `node scripts/package-release.mjs`
+- Windows 双击：`scripts\\package-release.cmd`
+- macOS / Linux：`chmod +x scripts/package-release.sh && ./scripts/package-release.sh`
+
+可选参数：`--win` / `--mac` / `--linux` 指定目标；`--skip-build` 在已有 `dist` 时跳过前端构建。
+
+Windows 生成 **NSIS 图形安装向导**（非静默一键）：默认安装到 **`Program Files` 等系统级应用程序目录**（`perMachine`），带**安装进度**与结束页 **「是否运行 YGO」** 勾选（`runAfterFinish`，默认勾选），并包含 MIT `LICENSE` 协议页。图标统一来自 **`src/assets/app/`**（`logo-16x16.png` … `logo-256x256.png`）；打包前执行 `npm run icons:prepare` 生成 `build/icon.ico`（应用、安装程序、卸载程序共用）。
+
+> 说明：NSIS `.exe` 需在 **Windows** 环境打包；`.dmg` 需在 **macOS**；Linux 默认产出 **AppImage**。未配置代码签名时脚本会设置 `CSC_IDENTITY_AUTO_DISCOVERY=false` 以免 mac 打包卡住。
 
 ### 卡牌数据库脚本
 
@@ -122,7 +135,7 @@ YGO/
 │   ├── store/               # Zustand（卡牌、设置、路由 UI、YGO 数据库状态）
 │   ├── theme/               # 明暗主题、Lobe antd token 构建
 │   └── utils/
-├── scripts/                 # mold-check、fetch-ygoprodeck 等
+├── scripts/                 # mold-check、fetch-ygoprodeck、package-release 等
 ├── copy-assets.js
 ├── vite.config.js
 ├── package.json

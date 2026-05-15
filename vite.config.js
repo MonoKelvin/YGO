@@ -20,6 +20,11 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     assetsDir: 'assets',
+    sourcemap: false,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 1200,
+    target: 'es2022',
+    minify: 'esbuild',
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
