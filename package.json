@@ -9,7 +9,7 @@
     "dev": "concurrently -k -n \"vite,electron\" -c \"cyan,magenta\" \"npm run vite:dev\" \"npm run electron:dev\"",
     "desktop:dev": "npm run dev",
     "renderer:dev": "npm run vite:dev",
-    "build": "cross-env NODE_ENV=production vite build --mode production && node copy-assets.js",
+    "build": "cross-env NODE_ENV=production vite build --mode production",
     "desktop:build": "npm run icons:prepare && npm run build && electron-builder",
     "desktop:pack": "npm run icons:prepare && npm run build && electron-builder --dir",
     "package:release": "node scripts/package-release.mjs",
@@ -49,9 +49,9 @@
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^32.1.2",
-    "electron-builder": "^24.13.3",
-    "rcedit": "^5.0.2",
+    "electron-builder": "^26.8.2",
     "png-to-ico": "^3.0.1",
+    "rcedit": "^5.0.2",
     "sharp": "^0.34.5",
     "vite": "^5.4.11",
     "wait-on": "^8.0.3"
@@ -79,7 +79,9 @@
         "from": "src/assets",
         "to": "assets",
         "filter": [
-          "**/*"
+          "app/**/*",
+          "docs/**/*",
+          "cards/**/*"
         ]
       }
     ],
@@ -113,6 +115,10 @@
       "icon": "build/icon.png"
     },
     "nsis": {
+      "include": "scripts/nsis/installer.nsh",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
       "oneClick": false,
       "perMachine": true,
       "allowElevation": true,

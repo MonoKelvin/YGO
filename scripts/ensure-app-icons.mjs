@@ -52,6 +52,9 @@ export async function ensureAppIcons() {
   const icoDest = join(buildDir, 'icon.ico')
   writeFileSync(icoDest, await pngToIco(icoBuffers))
 
+  const { ensureNsisInstallerUi } = await import('./prepare-nsis-installer-ui.mjs')
+  await ensureNsisInstallerUi()
+
   return { pngDest, icoDest }
 }
 

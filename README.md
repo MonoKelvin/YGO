@@ -48,7 +48,7 @@ YGO 是一款用于生成、浏览与管理游戏王卡牌数据的 **Electron +
 
 ### 环境要求
 
-- Node.js >= 18
+- Node.js **>= 20.17**（推荐 **>= 22.12**，与 `electron-builder` 26、`rcedit` 5 的 engines 一致，避免安装告警）
 - npm >= 9
 
 ### 安装依赖
@@ -77,7 +77,7 @@ npm run dev
 ### 构建与打包
 
 ```bash
-npm run build              # 生产构建：Vite（NODE_ENV=production）+ copy-assets
+npm run build              # 生产构建：Vite（NODE_ENV=production）；Mold/字体/规则正文等由 Vite 打入 dist，不再整库复制到 dist/assets
 npm run desktop:build      # build + electron-builder（当前平台默认目标）
 npm run package:release    # 推荐：一键发布包（见下）
 ```
@@ -90,7 +90,11 @@ npm run package:release    # 推荐：一键发布包（见下）
 
 可选参数：`--win` / `--mac` / `--linux` 指定目标；`--skip-build` 在已有 `dist` 时跳过前端构建。
 
-Windows 生成 **NSIS 图形安装向导**（非静默一键）：默认安装到 **`Program Files` 等系统级应用程序目录**（`perMachine`），带**安装进度**与结束页 **「是否运行 YGO」** 勾选（`runAfterFinish`，默认勾选），并包含 MIT `LICENSE` 协议页。图标统一来自 **`src/assets/app/`**（`logo-16x16.png` … `logo-256x256.png`）；打包前执行 `npm run icons:prepare` 生成 `build/icon.ico`（应用、安装程序、卸载程序共用）。**`build/` 目录为动态生成内容，已写入 `.gitignore`，勿提交到 Git。**
+Windows 生成 **NSIS 图形安装向导**（[NSIS](https://nsis.sourceforge.io/) + **electron-builder 26**；向导为 **扁平化** 浅色内容区 + 自定义侧栏/顶栏位图）：默认安装到 **`Program Files`（perMachine）**，含协议页、结束页可勾选启动。`npm run icons:prepare` 会生成 `build/icon.ico` 与 **`build/installerSidebar.bmp`** 等（见 `scripts/prepare-nsis-installer-ui.mjs`）；**`scripts/nsis/installer.nsh`** 配置 MUI 背景/正文/进度列表等扁平配色。**`build/`** 为动态生成，勿提交 Git。
+
+若需更「商店化」的 Windows 安装体验，可自行研究 **MSIX**（electron-builder 的 `appx`/`msix` 目标）或 **WiX MSI**，与本仓库当前 NSIS 流程独立配置即可。
+
+> **安装包体积**：`Mold`、字体等已由 Vite 静态打入 `app.asar`，安装包内 **`resources/assets` 仅包含** `app/`（窗口图标）、`docs/`（规则百科外链 PDF、资源说明与 Markdown 源文件）、`cards/`（可选：若你在打包前放入 `src/assets/cards/data/cards.json` 等则一并带上）。请勿再整库复制 `src/assets` 到 `extraResources`，否则会与 asar 内资源重复、显著增大体积。
 
 > 说明：NSIS `.exe` 需在 **Windows** 环境打包；`.dmg` 需在 **macOS**；Linux 默认产出 **AppImage**。未配置代码签名时脚本会设置 `CSC_IDENTITY_AUTO_DISCOVERY=false` 以免 mac 打包卡住。
 
@@ -135,8 +139,7 @@ YGO/
 │   ├── store/               # Zustand（卡牌、设置、路由 UI、YGO 数据库状态）
 │   ├── theme/               # 明暗主题、Lobe antd token 构建
 │   └── utils/
-├── scripts/                 # mold-check、fetch-ygoprodeck、package-release 等
-├── copy-assets.js
+├── scripts/                 # mold-check、fetch-ygoprodeck、package-release、prepare-nsis-installer-ui 等
 ├── vite.config.js
 ├── package.json
 └── index.html
