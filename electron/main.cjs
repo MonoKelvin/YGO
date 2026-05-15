@@ -20,6 +20,9 @@ const {
 
 } = require('electron');
 
+/** 存储创建的子窗口，用于管理窗口生命周期 */
+const childWindows = new Map();
+
 const path = require('path');
 
 const fs = require('fs');
@@ -1344,13 +1347,127 @@ ipcMain.on('set-theme', (event, theme) => {
 
 
 nativeTheme.on('updated', () => {
-
   if (mainWindow) {
-
     mainWindow.webContents.send('system-theme-changed', nativeTheme.shouldUseDarkColors ? 'dark' : 'light');
+  }
+});
 
+/**
+ * 打开外部链接
+ * @param {string} url - 要打开的链接
+ * @param {boolean} useSystemBrowser - 是否使用系统浏览器，true 使用系统默认浏览器，false 使用软件内部窗口
+ */
+ipcMain.handle('open-external-link', async (_event, url, useSystemBrowser = true) => {
+  if (!url || typeof url !== 'string') {
+    return { success: false, error: '链接地址无效' };
   }
 
+  // 验证 URL 格式
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+    // 只允许 http 和 https 协议
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return { success: false, error: '不支持的链接协议' };
+    }
+  } catch (e) {
+    return { success: false, error: '链接格式无效' };
+  }
+
+  if (useSystemBrowser) {
+    // 使用系统默认浏览器打开
+    try {
+      await shell.openExternal(url);
+      return { success: true, mode: 'system' };
+    } catch (error) {
+      return { success: false, error: error.message || '打开链接失败' };
+    }
+  } else {
+    // 使用软件内部窗口打开（无边框）
+    try {
+      // 如果窗口已存在，则聚焦并导航到新 URL
+      let childWin = childWindows.get(url);
+      if (childWin && !childWin.isDestroyed()) {
+        childWin.focus();
+        // 如果 URL 不同，重新加载
+        if (childWin.webContents.getURL() !== url) {
+          childWin.loadURL(url);
+        }
+        return { success: true, mode: 'internal', windowId: url };
+      }
+
+      // 创建新的无边框窗口
+      const winOptions = {
+        width: 1200,
+        height: 800,
+        minWidth: 800,
+        minHeight: 600,
+        frame: false, // 无边框
+        show: false,
+        backgroundColor: '#1a1d24',
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          webSecurity: true,
+        },
+        // 窗口控制按钮（在 macOS 上显示，Windows/Linux 无边框）
+        titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+      };
+
+      childWin = new BrowserWindow(winOptions);
+
+      // 存储窗口引用
+      childWindows.set(url, childWin);
+
+      // 窗口准备好后显示
+      childWin.once('ready-to-show', () => {
+        childWin.show();
+      });
+
+      // 加载 URL
+      await childWin.loadURL(url);
+
+      // 窗口关闭时清理引用
+      childWin.on('closed', () => {
+        childWindows.delete(url);
+      });
+
+      // 为内部窗口添加右键菜单支持
+      attachRendererContextMenu(childWin);
+
+      return { success: true, mode: 'internal', windowId: url };
+    } catch (error) {
+      return { success: false, error: error.message || '创建窗口失败' };
+    }
+  }
+});
+
+/**
+ * 关闭指定 URL 的内部窗口
+ */
+ipcMain.handle('close-internal-window', async (_event, url) => {
+  const childWin = childWindows.get(url);
+  if (childWin && !childWin.isDestroyed()) {
+    childWin.close();
+    childWindows.delete(url);
+    return { success: true };
+  }
+  return { success: false, error: '窗口不存在或已关闭' };
+});
+
+/**
+ * 关闭所有内部窗口
+ */
+ipcMain.handle('close-all-internal-windows', async () => {
+  const urls = Array.from(childWindows.keys());
+  for (const url of urls) {
+    const childWin = childWindows.get(url);
+    if (childWin && !childWin.isDestroyed()) {
+      childWin.close();
+    }
+    childWindows.delete(url);
+  }
+  return { success: true, closedCount: urls.length };
 });
 
 

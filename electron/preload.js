@@ -63,5 +63,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('window-maximized-state', handler);
   },
   
-  setTheme: (theme) => ipcRenderer.send('set-theme', theme)
+  setTheme: (theme) => ipcRenderer.send('set-theme', theme),
+
+  openExternalLink: (url, useSystemBrowser) =>
+    ipcRenderer.invoke('open-external-link', url, useSystemBrowser),
+  closeInternalWindow: (url) =>
+    ipcRenderer.invoke('close-internal-window', url),
+  closeAllInternalWindows: () =>
+    ipcRenderer.invoke('close-all-internal-windows'),
 });

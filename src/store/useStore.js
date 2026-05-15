@@ -22,6 +22,8 @@ const useCardStore = create((set) => ({
     sidebarCollapsed: false,
     /** 顶栏是否显示版本号与简介（默认显示） */
     titleBarShowVersionAndTagline: true,
+    /** 是否使用系统浏览器打开外部链接（默认使用系统浏览器） */
+    useSystemBrowser: true,
   },
   /** 卡牌生成器状态 */
   cardGenerator: {

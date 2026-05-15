@@ -1,0 +1,5 @@
+export { default as AppearanceSection } from './AppearanceSection'
+export { default as GeneralSection } from './GeneralSection'
+export { default as StorageSection } from './StorageSection'
+export { default as DatabaseSection } from './DatabaseSection'
+export { default as AboutSection } from './AboutSection'
