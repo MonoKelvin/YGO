@@ -90,7 +90,7 @@ npm run package:release    # 推荐：一键发布包（见下）
 
 可选参数：`--win` / `--mac` / `--linux` 指定目标；`--skip-build` 在已有 `dist` 时跳过前端构建。
 
-Windows 生成 **NSIS 图形安装向导**（非静默一键）：默认安装到 **`Program Files` 等系统级应用程序目录**（`perMachine`），带**安装进度**与结束页 **「是否运行 YGO」** 勾选（`runAfterFinish`，默认勾选），并包含 MIT `LICENSE` 协议页。图标统一来自 **`src/assets/app/`**（`logo-16x16.png` … `logo-256x256.png`）；打包前执行 `npm run icons:prepare` 生成 `build/icon.ico`（应用、安装程序、卸载程序共用）。
+Windows 生成 **NSIS 图形安装向导**（非静默一键）：默认安装到 **`Program Files` 等系统级应用程序目录**（`perMachine`），带**安装进度**与结束页 **「是否运行 YGO」** 勾选（`runAfterFinish`，默认勾选），并包含 MIT `LICENSE` 协议页。图标统一来自 **`src/assets/app/`**（`logo-16x16.png` … `logo-256x256.png`）；打包前执行 `npm run icons:prepare` 生成 `build/icon.ico`（应用、安装程序、卸载程序共用）。**`build/` 目录为动态生成内容，已写入 `.gitignore`，勿提交到 Git。**
 
 > 说明：NSIS `.exe` 需在 **Windows** 环境打包；`.dmg` 需在 **macOS**；Linux 默认产出 **AppImage**。未配置代码签名时脚本会设置 `CSC_IDENTITY_AUTO_DISCOVERY=false` 以免 mac 打包卡住。
 
