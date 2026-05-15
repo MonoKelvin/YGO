@@ -1,0 +1,9 @@
+diff --git a/node_modules/@emoji-mart/react/package.json b/node_modules/@emoji-mart/react/package.json
+--- a/node_modules/@emoji-mart/react/package.json
++++ b/node_modules/@emoji-mart/react/package.json
+@@ -20,4 +20,4 @@
+   "peerDependencies": {
+     "emoji-mart": "^5.2",
+-    "react": "^16.8 || ^17 || ^18"
++    "react": "^16.8 || ^17 || ^18 || ^19"
+   },

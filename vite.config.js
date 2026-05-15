@@ -22,7 +22,7 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     reportCompressedSize: false,
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 2000,
     target: 'es2022',
     minify: 'esbuild',
     rollupOptions: {

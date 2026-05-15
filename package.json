@@ -17,7 +17,8 @@
     "start": "npm run dev",
     "mold:check": "node scripts/mold-check.mjs",
     "cards:fetch": "node scripts/fetch-ygoprodeck.mjs",
-    "cards:fetch:images": "node scripts/fetch-ygoprodeck.mjs --images"
+    "cards:fetch:images": "node scripts/fetch-ygoprodeck.mjs --images",
+    "postinstall": "patch-package"
   },
   "keywords": [
     "electron",
@@ -50,6 +51,7 @@
     "cross-env": "^7.0.3",
     "electron": "^32.1.2",
     "electron-builder": "^26.8.2",
+    "patch-package": "^8.0.0",
     "png-to-ico": "^3.0.1",
     "rcedit": "^5.0.2",
     "sharp": "^0.34.5",

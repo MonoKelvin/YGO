@@ -13,7 +13,7 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, statSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ensureAppIcons } from './ensure-app-icons.mjs'
@@ -49,7 +49,7 @@ function run(cmd, cmdArgs, extra = {}) {
 /** 从 src/assets/app 生成 build/icon.png 与 build/icon.ico */
 async function preparePackagingIcons() {
   await ensureAppIcons()
-  console.log('[package-release] 已使用 src/assets/app 生成 build/icon.png / build/icon.ico')
+  console.log('[package-release] 已从 src/assets/app 生成 build/icon.png / build/icon.ico（取最大尺寸 logo-NxN.png 为母图）')
 }
 
 function pickTargets() {
@@ -120,6 +120,12 @@ async function main() {
 
   const targets = pickTargets()
   console.log('\n[package-release] 2/2 electron-builder 目标:', targets.join(', '))
+
+  const outDir = join(root, 'dist_electron')
+  if (existsSync(outDir)) {
+    console.log('[package-release] 清理旧输出:', outDir)
+    rmSync(outDir, { recursive: true, force: true })
+  }
 
   const { args: ebArgs, env: ebEnv } = electronBuilderArgs(targets)
   run('npx', ebArgs, { env: ebEnv })

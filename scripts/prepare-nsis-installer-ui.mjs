@@ -12,10 +12,11 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
+import { findBestSquareAppLogoPath } from './appLogoSource.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const buildDir = join(root, 'build')
-const appIconPath = join(root, 'src/assets/app/logo-256x256.png')
+const appIconDir = join(root, 'src/assets/app')
 
 const SIDEBAR_W = 164
 const SIDEBAR_H = 314
@@ -90,7 +91,7 @@ function stripRgbIfRgba(data, w, h, channels) {
  * 侧栏：窄色条 + 整面纯色（无底栏分区/分割线），极简扁平。
  * @param {{ accent: string, uninstall?: boolean }} opts
  */
-async function renderSidebar(opts) {
+async function renderSidebar(opts, appLogoPath) {
   const accent = opts.accent ?? ACCENT
   const barW = 4
   const svg = `
@@ -106,8 +107,8 @@ async function renderSidebar(opts) {
   const bg = { r: 20, g: 21, b: 24 }
   let base = sharp(Buffer.from(svg)).ensureAlpha().flatten({ background: bg })
 
-  if (existsSync(appIconPath)) {
-    const logo = await sharp(readFileSync(appIconPath))
+  if (appLogoPath && existsSync(appLogoPath)) {
+    const logo = await sharp(readFileSync(appLogoPath))
       .resize(72, 72, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png()
       .toBuffer()
@@ -148,12 +149,14 @@ async function renderHeader(accent) {
   }
 }
 
-export async function ensureNsisInstallerUi() {
+export async function ensureNsisInstallerUi(logoPath) {
   mkdirSync(buildDir, { recursive: true })
 
+  const appLogoPath = logoPath ?? findBestSquareAppLogoPath(appIconDir)
+
   const accent = ACCENT
-  const installSide = await renderSidebar({ accent })
-  const uninstallSide = await renderSidebar({ accent, uninstall: true })
+  const installSide = await renderSidebar({ accent }, appLogoPath)
+  const uninstallSide = await renderSidebar({ accent, uninstall: true }, appLogoPath)
   const header = await renderHeader(accent)
 
   const outSidebar = join(buildDir, 'installerSidebar.bmp')

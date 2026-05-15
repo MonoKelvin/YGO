@@ -1,4 +1,5 @@
 import { toast } from '@lobehub/ui'
+import useCardStore from '../store/useStore'
 
 /**
  * 打开外部链接
@@ -21,9 +22,7 @@ export async function openExternalLink(url, useSystemBrowser = null) {
   // 如果没有指定，读取用户设置
   let effectiveUseSystemBrowser = useSystemBrowser
   if (effectiveUseSystemBrowser === null || effectiveUseSystemBrowser === undefined) {
-    // 从 store 中读取设置，默认使用系统浏览器
     try {
-      const { default: useCardStore } = await import('../store/useStore')
       const settings = useCardStore.getState().settings
       effectiveUseSystemBrowser = settings.useSystemBrowser !== false
     } catch (e) {
