@@ -11,7 +11,8 @@ import { openExternalLink } from '../../utils/openExternalLink'
  * @param {Array} props.sections - 章节列表
  * @param {string} props.activeId - 当前激活的ID
  * @param {Object} props.expandedSections - 展开的章节状态
- * @param {Function} props.onToggleSection - 切换章节展开/折叠
+ * @param {Function} props.onToggleSection - 切换章节展开/折叠（目录左侧图标）
+ * @param {Function} props.onExpandSection - 展开指定章节（子标题跳转）
  * @param {Function} props.onScrollToId - 滚动到指定ID
  * @param {Object} props.tocNavRef - 目录导航引用
  * @param {Function} props.onOpenPdf - 打开PDF
@@ -23,6 +24,7 @@ export default function SidebarPanel({
     activeId,
     expandedSections,
     onToggleSection,
+    onExpandSection,
     onScrollToId,
     tocNavRef,
     onOpenPdf,
@@ -36,8 +38,13 @@ export default function SidebarPanel({
     return (
         <aside className="rules-wiki-rail" aria-label="目录与资料">
             <ScrollArea
+                flex={1}
                 className="rules-wiki-rail-scroll"
                 contentProps={{ className: 'rules-wiki-rail-scroll-content' }}
+                viewportProps={{
+                    'data-rules-wiki-toc-viewport': 'true',
+                }}
+                style={{ minHeight: 0, height: '100%', width: '100%' }}
             >
                 <div className="rules-wiki-rail-inner">
                     {/* 目录面板 */}
@@ -51,6 +58,7 @@ export default function SidebarPanel({
                             activeId={activeId}
                             expandedSections={expandedSections}
                             onToggleSection={onToggleSection}
+                            onExpandSection={onExpandSection}
                             onScrollToId={onScrollToId}
                             tocNavRef={tocNavRef}
                         />

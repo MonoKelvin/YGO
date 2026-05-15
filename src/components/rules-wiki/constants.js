@@ -7,7 +7,7 @@ import mdDetailed from '../../assets/docs/rules/04-detailed.zh.md?raw'
 /**
  * 滚动对齐顶部偏移量（考虑固定标题栏高度）
  */
-export const RULES_WIKI_SCROLL_ALIGN_TOP = 20
+export const RULES_WIKI_SCROLL_ALIGN_TOP = 16
 
 /**
  * 回到顶部按钮显示阈值

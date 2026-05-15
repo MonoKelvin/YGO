@@ -1,6 +1,15 @@
 export { default as MarkdownSection } from './MarkdownSection'
+export { default as MarkdownPart } from './MarkdownPart'
+export { useRulesWikiScrollSync } from './useRulesWikiScrollSync'
 export { default as TableOfContents } from './TableOfContents'
 export { default as SidebarPanel } from './SidebarPanel'
 export { useMarkdownComponents } from './useMarkdownComponents.jsx'
-export { extractSectionH2Nav, remarkHeadingIds, joinResourcePath } from './utils'
+export {
+  extractSectionH2Nav,
+  remarkHeadingIds,
+  rehypeHeadingIds,
+  estimateSectionMinHeight,
+  resolveSectionIdFromNav,
+  joinResourcePath,
+} from './utils'
 export { RULE_SECTIONS_RAW, RULES_WIKI_SCROLL_ALIGN_TOP, SCROLL_TOP_BTN_SHOW_PX } from './constants'

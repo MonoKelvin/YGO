@@ -22,7 +22,6 @@ export default function GeneralSection({
     {
       label: '使用系统浏览器打开链接',
       desc: '开启后，所有外部链接将使用系统默认浏览器打开；关闭后，将在软件内部窗口打开（无边框）',
-      name: 'useSystemBrowser',
       children: (
         <Switch
           variant="outlined"
@@ -30,12 +29,10 @@ export default function GeneralSection({
           onChange={onUseSystemBrowserChange}
         />
       ),
-      valuePropName: 'checked',
     },
     {
       label: '顶栏显示版本与简介',
       desc: '在窗口标题栏显示版本号与简介文案；关闭后仅保留「YGO」名称（开发构建仍显示 dev 标记）',
-      name: 'titleBarShowVersionAndTagline',
       children: (
         <Switch
           variant="outlined"
@@ -43,7 +40,6 @@ export default function GeneralSection({
           onChange={onTitleBarMetaChange}
         />
       ),
-      valuePropName: 'checked',
     },
   ]
 
@@ -52,7 +48,6 @@ export default function GeneralSection({
     items.push({
       label: '开发者工具',
       desc: '独立窗口打开；快捷键 Ctrl+Shift+I',
-      name: 'devTools',
       children: (
         <Switch
           variant="outlined"
@@ -60,7 +55,6 @@ export default function GeneralSection({
           onChange={onDevToolsToggle}
         />
       ),
-      valuePropName: 'checked',
     })
   }
 

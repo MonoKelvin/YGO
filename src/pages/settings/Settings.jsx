@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Form } from '@lobehub/ui'
+import { Form, primaryColors } from '@lobehub/ui'
 import { Palette, SlidersHorizontal, HardDrive, Library, Info } from 'lucide-react'
 import useCardStore from '../../store/useStore'
 import useYgoDatabaseStore from '../../store/useYgoDatabaseStore'
 import { persistUserSettingsToDisk } from '../../utils/persistUserSettings'
-import { resolveThemePrimaryColor } from '../../config/lobePrimaryColor'
+import {
+    LOBE_PRIMARY_COLOR_KEYS,
+    LOBE_PRIMARY_SWATCH_DEFAULT,
+} from '../../config/lobePrimaryColor'
 import {
     DEFAULT_LIBRARY_PAGE_SIZE,
     normalizeLibraryPageSize,
@@ -59,52 +62,26 @@ export default function Settings() {
         await persistUserSettingsToDisk()
     }
 
-    // 处理主题色变更
+    /** 与 @lobehub/ui primaryColors 实际 hex 对齐，勿把蓝色误判为「默认」 */
     const handlePrimaryColorChange = (color) => {
-        // 处理空值、透明值或默认蓝色（表示使用默认主题色）
-        // ColorSwatches 选择透明选项时会传入 undefined
-        if (color == null || color === '' || color === 'rgba(0, 0, 0, 0)' || color === '#1677ff') {
+        if (
+            color == null ||
+            color === '' ||
+            color === LOBE_PRIMARY_SWATCH_DEFAULT ||
+            color === 'transparent'
+        ) {
             setSetting('primaryColor', null)
-        } else {
-            const needle = String(color).trim().toLowerCase()
-            // 查找对应的颜色键
-            const colorMap = {
-                '#f5222d': 'red',
-                '#fa8c16': 'orange',
-                '#faad14': 'gold',
-                '#fadb14': 'yellow',
-                '#8bbb11': 'lime',
-                '#52c41a': 'green',
-                '#13c2c2': 'cyan',
-                '#1677ff': 'blue',
-                '#2f4554': 'geekblue',
-                '#722ed1': 'purple',
-                '#eb2f96': 'magenta',
-                '#ff4d4f': 'volcano',
-                // rgba 格式的颜色值（ColorSwatches 可能传入这种格式）
-                'rgb(245, 34, 45)': 'red',
-                'rgb(250, 140, 22)': 'orange',
-                'rgb(250, 173, 20)': 'gold',
-                'rgb(250, 219, 20)': 'yellow',
-                'rgb(139, 187, 17)': 'lime',
-                'rgb(82, 196, 26)': 'green',
-                'rgb(19, 194, 194)': 'cyan',
-                'rgb(22, 119, 255)': 'blue',
-                'rgb(47, 69, 84)': 'geekblue',
-                'rgb(114, 46, 209)': 'purple',
-                'rgb(235, 47, 150)': 'magenta',
-                'rgb(255, 77, 79)': 'volcano',
-            }
-            const key = colorMap[needle]
-            if (key) {
-                setSetting('primaryColor', key)
-            } else {
-                // 如果没有找到匹配的颜色，直接使用传入的值作为颜色键
-                // 这可能是一个有效的预设颜色名
-                if (['red', 'orange', 'gold', 'yellow', 'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple', 'magenta', 'volcano'].includes(needle)) {
-                    setSetting('primaryColor', needle)
-                }
-            }
+            void persistUserSettingsToDisk()
+            return
+        }
+        const needle = String(color).trim().toLowerCase()
+        const key = LOBE_PRIMARY_COLOR_KEYS.find(
+            (k) => String(primaryColors[k]).trim().toLowerCase() === needle,
+        )
+        if (key) {
+            setSetting('primaryColor', key)
+        } else if (LOBE_PRIMARY_COLOR_KEYS.includes(needle)) {
+            setSetting('primaryColor', needle)
         }
         void persistUserSettingsToDisk()
     }

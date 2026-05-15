@@ -154,15 +154,18 @@ function PageCache() {
                 <DeckRoutes />
             </div>
 
-            {/* 规则百科 */}
+            {/* 规则百科：占满主内容高度，避免整页 app-content 滚动；内部左右各自 ScrollArea */}
             <div
                 style={{
-                    display: activePage === 'rules' ? 'block' : 'none',
+                    display: activePage === 'rules' ? 'flex' : 'none',
+                    flexDirection: 'column',
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     width: '100%',
-                    minHeight: '100%',
+                    height: '100%',
+                    minHeight: 0,
+                    overflow: 'hidden',
                 }}
             >
                 <RouteErrorBoundary title="规则百科暂时无法打开">
@@ -266,8 +269,11 @@ function AppContent() {
      * ThemeProvider：Lobe 主题。
      * ToastHost / ModalHost / ContextMenuHost：全局 toast、栈式 Modal、右键菜单 portal。
      */
+    /** 主色变化时 antd-style 可能未完全重算 token，用 key 强制与 lobe-ui ThemeProvider 行为一致 */
+    const themeProviderKey = `${resolvedAppearance}:${primaryColorKey ?? 'default'}`
+
     return (
-        <ThemeProvider appearance={resolvedAppearance} customTheme={customTheme}>
+        <ThemeProvider key={themeProviderKey} appearance={resolvedAppearance} customTheme={customTheme}>
             <ToastHost />
             <ModalHost />
             <ContextMenuHost />

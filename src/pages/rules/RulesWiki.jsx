@@ -9,9 +9,10 @@ import {
 import { ScrollArea, Button } from '@lobehub/ui'
 import { ChevronUp, BookOpen } from 'lucide-react'
 import {
-    MarkdownSection,
+    MarkdownPart,
     SidebarPanel,
     useMarkdownComponents,
+    useRulesWikiScrollSync,
     extractSectionH2Nav,
     joinResourcePath,
     RULE_SECTIONS_RAW,
@@ -24,27 +25,22 @@ import './RulesWiki.css'
  * 主组件：规则百科页面
  */
 export default function RulesWiki() {
-    // 获取 Electron API
     const electron = typeof window !== 'undefined' ? window.electronAPI : null
 
-    // 滚动容器引用
-    const contentScrollRef = useRef(null)
+    const articleViewportRef = useRef(null)
     const tocNavRef = useRef(null)
 
-    // 解析章节和目录结构
     const sections = useMemo(
         () =>
             RULE_SECTIONS_RAW.map((s) => ({
                 ...s,
                 h2s: extractSectionH2Nav(s.id, s.md),
             })),
-        []
+        [],
     )
 
-    // 共享的 Markdown 组件配置
     const sharedMd = useMarkdownComponents()
 
-    // 扁平化的目录列表（包含章节和 H2 标题）
     const flatHeadings = useMemo(() => {
         const rows = []
         for (const s of sections) {
@@ -65,13 +61,11 @@ export default function RulesWiki() {
         return rows
     }, [sections])
 
-    // 有序的导航 ID 列表（用于滚动同步判断）
     const orderedNavIds = useMemo(
         () => flatHeadings.map((r) => r.id),
-        [flatHeadings]
+        [flatHeadings],
     )
 
-    // 状态管理
     const [activeId, setActiveId] = useState(() => orderedNavIds[0] ?? null)
     const [showScrollTopBtn, setShowScrollTopBtn] = useState(false)
     const [expandedSections, setExpandedSections] = useState(() => {
@@ -82,111 +76,84 @@ export default function RulesWiki() {
         return initial
     })
 
-    /**
-     * 获取内容滚动元素
-     */
+    const bindArticleViewport = useCallback((node) => {
+        articleViewportRef.current = node
+    }, [])
+
     const getContentScrollElement = useCallback(() => {
-        if (!contentScrollRef.current) return null
-        const container = contentScrollRef.current
+        const cached = articleViewportRef.current
+        if (cached?.isConnected) return cached
+        const el = document.querySelector(
+            '[data-rules-wiki-article-viewport="true"]',
+        )
+        if (el) articleViewportRef.current = el
+        return el
+    }, [])
 
-        // 尝试多种方式找到滚动元素
-        let scrollEl = null
+    const findScrollTarget = useCallback((id) => {
+        const article = document.querySelector('.rules-wiki-article')
+        if (!article) {
+            return (
+                document.getElementById(id) ||
+                document.querySelector(`[data-rules-wiki-anchor="${id}"]`)
+            )
+        }
 
-        // 方法1: 查找具有 overflow-y 或 overflow 属性的元素
-        const allDivs = container.querySelectorAll('div')
-        for (const div of allDivs) {
-            const style = window.getComputedStyle(div)
-            if (style.overflowY === 'auto' || style.overflowY === 'scroll' ||
-                style.overflow === 'auto' || style.overflow === 'scroll') {
-                scrollEl = div
-                break
+        if (!id.includes('__')) {
+            const navEl = article.querySelector(
+                `[data-rules-wiki-nav-id="${CSS.escape(id)}"]`,
+            )
+            if (navEl) return navEl
+
+            const byAnchor = article.querySelector(
+                `[data-rules-wiki-anchor="${CSS.escape(id)}"]`,
+            )
+            if (byAnchor) return byAnchor
+
+            const part = article.querySelector(`#${CSS.escape(id)}`)
+            if (part) {
+                const h1 = part.querySelector('.rules-wiki-h1')
+                return h1 || part
             }
         }
 
-        // 方法2: 如果没找到，尝试第一个子元素
-        if (!scrollEl && container.children.length > 0) {
-            scrollEl = container.children[0]
-        }
-
-        // 方法3: 如果还没找到，使用容器本身
-        if (!scrollEl) {
-            scrollEl = container
-        }
-
-        return scrollEl
-    }, [])
-
-    /**
-     * 计算元素在滚动容器中的顶部位置
-     */
-    const headingTopInScroller = useCallback((el, scrollRoot) => {
         return (
-            el.getBoundingClientRect().top -
-            scrollRoot.getBoundingClientRect().top +
-            scrollRoot.scrollTop
+            article.querySelector(`#${CSS.escape(id)}`) ||
+            article.querySelector(`[data-rules-wiki-anchor="${id}"]`) ||
+            document.getElementById(id) ||
+            document.querySelector(`[data-rules-wiki-anchor="${id}"]`)
         )
     }, [])
 
-    /**
-     * 从内容滚动位置同步更新当前激活的目录项
-     */
-    const syncActiveFromContentScroll = useCallback(() => {
-        const root = getContentScrollElement()
-        if (!root || !orderedNavIds.length) return
+    const getArticleRoot = useCallback(
+        () => document.querySelector('.rules-wiki-article'),
+        [],
+    )
 
-        const st = root.scrollTop
-        const lead = RULES_WIKI_SCROLL_ALIGN_TOP
+    const {
+        syncFromContentScroll,
+        scrollContentToId,
+        rebuildOffsetCache,
+        scheduleRebuildOffsetCache,
+        onContentScrollEnd,
+        consumeSkipTocRailScroll,
+    } = useRulesWikiScrollSync({
+        orderedNavIds,
+        alignTop: RULES_WIKI_SCROLL_ALIGN_TOP,
+        getContentScrollElement,
+        getArticleRoot,
+        findScrollTarget,
+        setActiveId,
+        setExpandedSections,
+        setShowScrollTopBtn,
+        scrollTopShowPx: SCROLL_TOP_BTN_SHOW_PX,
+    })
 
-        let chosen = orderedNavIds[0]
-        // 从后往前遍历，找到最接近视口顶部的标题
-        for (let i = orderedNavIds.length - 1; i >= 0; i--) {
-            const id = orderedNavIds[i]
-            const el = document.getElementById(id)
-            if (!el) continue
-            const topIn = headingTopInScroller(el, root)
-            if (topIn <= st + lead) {
-                chosen = id
-                break
-            }
-        }
-
-        setActiveId((prev) => (prev === chosen ? prev : chosen))
-
-        // 自动展开当前激活章节的子目录
-        const currentSectionId = sections.find((s) => chosen.startsWith(s.id))?.id
-        if (currentSectionId) {
-            setExpandedSections((prev) => ({ ...prev, [currentSectionId]: true }))
-        }
-    }, [orderedNavIds, sections, getContentScrollElement, headingTopInScroller])
-
-    /**
-     * 滚动内容区域到指定 ID 的元素
-     */
-    const scrollContentToId = useCallback((id) => {
-        const root = getContentScrollElement()
-        const el = document.getElementById(id)
-        if (!root || !el) return
-
-        const run = () => {
-            const topIn = headingTopInScroller(el, root)
-            const target = Math.max(0, topIn - RULES_WIKI_SCROLL_ALIGN_TOP)
-            root.scrollTo({ top: target, behavior: 'smooth' })
-        }
-
-        requestAnimationFrame(() => requestAnimationFrame(run))
-    }, [getContentScrollElement, headingTopInScroller])
-
-    /**
-     * 滚动内容区域到顶部
-     */
     const scrollContentToTop = useCallback(() => {
         const root = getContentScrollElement()
         root?.scrollTo({ top: 0, behavior: 'smooth' })
     }, [getContentScrollElement])
 
-    /**
-     * 切换章节的展开/折叠状态
-     */
     const toggleSectionExpand = useCallback((sectionId) => {
         setExpandedSections((prev) => ({
             ...prev,
@@ -194,117 +161,156 @@ export default function RulesWiki() {
         }))
     }, [])
 
-    /**
-     * 持久化滚动位置（会话存储）
-     */
+    const expandSection = useCallback((sectionId) => {
+        setExpandedSections((prev) => ({ ...prev, [sectionId]: true }))
+    }, [])
+
+    /** 正文滚动：目录高亮 + 回到顶部按钮（合并为单监听器） */
     useEffect(() => {
-        const root = getContentScrollElement()
-        if (!root) return undefined
+        let disposed = false
+        let root = null
+        let ticking = false
+        let persistIdle = null
 
-        const key = 'ygo:rulesWikiArticleScroll'
-        const saved = sessionStorage.getItem(key)
-
-        if (saved != null) {
-            const y = parseInt(saved, 10)
-            if (!Number.isNaN(y)) {
-                requestAnimationFrame(() => {
-                    root.scrollTop = y
-                })
-            }
-        }
-
-        let idle = null
-        const persist = () => {
-            if (idle != null) cancelAnimationFrame(idle)
-            idle = requestAnimationFrame(() => {
-                idle = null
-                sessionStorage.setItem(key, String(root.scrollTop))
+        const persistScroll = () => {
+            if (!root || persistIdle != null) return
+            persistIdle = requestAnimationFrame(() => {
+                persistIdle = null
+                sessionStorage.setItem(
+                    'ygo:rulesWikiArticleScroll',
+                    String(root.scrollTop),
+                )
             })
         }
 
-        root.addEventListener('scroll', persist, { passive: true })
-
-        return () => {
-            if (idle != null) cancelAnimationFrame(idle)
-            sessionStorage.setItem(key, String(root.scrollTop))
-            root.removeEventListener('scroll', persist)
-        }
-    }, [getContentScrollElement])
-
-    /**
-     * 监听内容滚动，同步更新目录高亮
-     */
-    useEffect(() => {
-        const root = getContentScrollElement()
-        if (!root) {
-            console.warn('[RulesWiki] 无法获取滚动元素')
-            return undefined
-        }
-
-        console.log('[RulesWiki] 滚动监听器已绑定到:', root)
-
-        let ticking = false
         const onScroll = () => {
-            if (ticking) return
+            if (!root || ticking) return
             ticking = true
-
             requestAnimationFrame(() => {
                 ticking = false
-                syncActiveFromContentScroll()
-
-                const st = root.scrollTop
-                setShowScrollTopBtn((prev) => {
-                    const next = st >= SCROLL_TOP_BTN_SHOW_PX
-                    return prev === next ? prev : next
-                })
+                syncFromContentScroll()
+                persistScroll()
             })
         }
 
-        root.addEventListener('scroll', onScroll, { passive: true })
-        syncActiveFromContentScroll()
+        const onScrollEnd = () => {
+            onContentScrollEnd()
+            persistScroll()
+        }
+
+        const tryAttach = (attempt = 0) => {
+            if (disposed) return
+            root = getContentScrollElement()
+            if (!root) {
+                if (attempt < 48) {
+                    requestAnimationFrame(() => tryAttach(attempt + 1))
+                }
+                return
+            }
+
+            const saved = sessionStorage.getItem('ygo:rulesWikiArticleScroll')
+            if (saved != null) {
+                const y = parseInt(saved, 10)
+                if (!Number.isNaN(y)) root.scrollTop = y
+            }
+
+            root.addEventListener('scroll', onScroll, { passive: true })
+            if ('onscrollend' in root) {
+                root.addEventListener('scrollend', onScrollEnd, { passive: true })
+            }
+
+            rebuildOffsetCache()
+            syncFromContentScroll()
+        }
+
+        tryAttach()
 
         return () => {
-            console.log('[RulesWiki] 滚动监听器已移除')
-            root.removeEventListener('scroll', onScroll)
+            disposed = true
+            if (persistIdle != null) cancelAnimationFrame(persistIdle)
+            if (root) {
+                sessionStorage.setItem(
+                    'ygo:rulesWikiArticleScroll',
+                    String(root.scrollTop),
+                )
+                root.removeEventListener('scroll', onScroll)
+                if ('onscrollend' in root) {
+                    root.removeEventListener('scrollend', onScrollEnd)
+                }
+            }
         }
-    }, [syncActiveFromContentScroll, getContentScrollElement])
+    }, [
+        getContentScrollElement,
+        syncFromContentScroll,
+        onContentScrollEnd,
+        rebuildOffsetCache,
+    ])
 
-    /**
-     * 在目录结构变化时重新同步
-     */
     useLayoutEffect(() => {
-        syncActiveFromContentScroll()
+        getContentScrollElement()
+        scheduleRebuildOffsetCache()
+        syncFromContentScroll()
         const root = getContentScrollElement()
         if (root) {
             setShowScrollTopBtn(root.scrollTop >= SCROLL_TOP_BTN_SHOW_PX)
         }
-    }, [orderedNavIds, syncActiveFromContentScroll, getContentScrollElement])
 
-    /**
-     * 当激活项变化时，自动滚动目录导航到可见区域
-     */
+        const timer = window.setTimeout(rebuildOffsetCache, 400)
+        return () => window.clearTimeout(timer)
+    }, [
+        orderedNavIds,
+        scheduleRebuildOffsetCache,
+        syncFromContentScroll,
+        getContentScrollElement,
+        rebuildOffsetCache,
+    ])
+
+    /** 正文驱动侧栏目录滚入可见；目录点击引起的变化不滚侧栏 */
     useEffect(() => {
+        if (consumeSkipTocRailScroll()) return
+
         const nav = tocNavRef.current
         if (!nav || !activeId) return
 
-        const btn = nav.querySelector(`button.is-active`)
-        if (btn) {
-            btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-        }
-    }, [activeId])
+        const target =
+            nav.querySelector('button.rules-wiki-toc-item.is-active') ||
+            nav.querySelector('.rules-wiki-toc-part-row.is-head-active')
 
-    /**
-     * 确保激活项始终在有效范围内
-     */
+        if (!target) return
+
+        const railScroller = nav
+            .closest('.rules-wiki-rail-scroll')
+            ?.querySelector('[data-rules-wiki-toc-viewport="true"]')
+
+        if (railScroller) {
+            const scrollerRect = railScroller.getBoundingClientRect()
+            const targetRect = target.getBoundingClientRect()
+            const offset =
+                targetRect.top - scrollerRect.top + railScroller.scrollTop
+            const nextTop = Math.max(
+                0,
+                Math.min(
+                    offset - scrollerRect.height * 0.35,
+                    railScroller.scrollHeight - scrollerRect.height,
+                ),
+            )
+            railScroller.scrollTo({ top: nextTop, behavior: 'smooth' })
+            return
+        }
+
+        target.scrollIntoView({
+            block: 'nearest',
+            inline: 'nearest',
+            behavior: 'smooth',
+        })
+    }, [activeId, consumeSkipTocRailScroll])
+
     useEffect(() => {
         setActiveId((prev) =>
-            orderedNavIds.includes(prev) ? prev : orderedNavIds[0] ?? null
+            orderedNavIds.includes(prev) ? prev : orderedNavIds[0] ?? null,
         )
     }, [orderedNavIds])
 
-    /**
-     * 打开本地 PDF 文件
-     */
     const handleOpenPdf = async () => {
         if (!electron?.getResourcePath || !electron?.openPathInExplorer) return
         try {
@@ -318,7 +324,7 @@ export default function RulesWiki() {
             if (!res.success) {
                 window.alert(
                     res.error ||
-                    '无法打开 PDF。可在浏览器从 Konami 官网下载 Rulebook。',
+                        '无法打开 PDF。可在浏览器从 Konami 官网下载 Rulebook。',
                 )
             }
         } catch (e) {
@@ -326,9 +332,6 @@ export default function RulesWiki() {
         }
     }
 
-    /**
-     * 打开文档文件夹
-     */
     const handleOpenDocsFolder = async () => {
         if (!electron?.getResourcePath || !electron?.openPathInExplorer) return
         try {
@@ -342,7 +345,6 @@ export default function RulesWiki() {
 
     return (
         <div className="rules-wiki-page">
-            {/* 标题区域 */}
             <header className="rules-wiki-header">
                 <div className="rules-wiki-header-content">
                     <div className="rules-wiki-title-row">
@@ -350,23 +352,29 @@ export default function RulesWiki() {
                         <h1 className="rules-wiki-title">规则百科</h1>
                     </div>
                     <p className="rules-wiki-lead">
-                        开篇为「百科引言」（世界观、维基与官网、动画赛事与数据库外链）；其后为打牌规则，由浅入深。细则以 Konami 与数据库为准。
+                        开篇为「百科引言」（世界观、维基与官网、动画赛事与数据库外链）；其后为打牌规则，由浅入深。细则以
+                        Konami 与数据库为准。
                     </p>
                 </div>
             </header>
 
-            {/* 主体内容区域 */}
             <div className="rules-wiki-layout">
-                {/* 主内容区域 */}
                 <main className="rules-wiki-main" role="main">
                     <ScrollArea
-                        ref={contentScrollRef}
+                        flex={1}
                         className="rules-wiki-article-scroll"
+                        contentProps={{
+                            className: 'rules-wiki-article-scroll-inner',
+                        }}
+                        viewportProps={{
+                            ref: bindArticleViewport,
+                            'data-rules-wiki-article-viewport': 'true',
+                        }}
                         tabIndex={0}
                         role="region"
                         aria-label="规则正文"
+                        style={{ minHeight: 0, height: '100%', width: '100%' }}
                     >
-                        {/* 回到顶部按钮 */}
                         {showScrollTopBtn && (
                             <div className="rules-wiki-scroll-top-float">
                                 <Button
@@ -381,27 +389,24 @@ export default function RulesWiki() {
                             </div>
                         )}
 
-                        {/* 文章内容 */}
                         <article className="rules-wiki-article">
                             {sections.map((s) => (
-                                <section
+                                <MarkdownPart
                                     key={s.id}
-                                    id={s.id}
-                                    className="rules-wiki-part"
-                                >
-                                    <MarkdownSection section={s} sharedMd={sharedMd} />
-                                </section>
+                                    section={s}
+                                    sharedMd={sharedMd}
+                                />
                             ))}
                         </article>
                     </ScrollArea>
                 </main>
 
-                {/* 侧边栏区域（目录与资料） */}
                 <SidebarPanel
                     sections={sections}
                     activeId={activeId}
                     expandedSections={expandedSections}
                     onToggleSection={toggleSectionExpand}
+                    onExpandSection={expandSection}
                     onScrollToId={scrollContentToId}
                     tocNavRef={tocNavRef}
                     onOpenPdf={handleOpenPdf}

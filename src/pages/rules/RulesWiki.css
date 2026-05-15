@@ -1,15 +1,17 @@
-/* 规则百科页面整体布局 */
+/* 规则百科页面整体布局：占满父级（App 内 rules 容器）高度，避免主内容区整页滚动 */
 .rules-wiki-page {
   display: flex;
   flex-direction: column;
   flex: 1 1 0%;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
   width: 100%;
   max-width: min(1280px, 100%);
   margin: 0 auto;
   padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-md);
   box-sizing: border-box;
+  text-align: left;
 }
 
 .rules-wiki-page,
@@ -17,12 +19,27 @@
   min-width: 0;
 }
 
-/* 标题区域 */
+/* 标题区域：轻渐变底边，与正文区呼应 */
 .rules-wiki-header {
   flex-shrink: 0;
-  padding-bottom: var(--spacing-md);
+  position: relative;
   margin-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 6%, transparent) 0%,
+    transparent 48%,
+    color-mix(in srgb, var(--color-primary) 4%, transparent) 100%
+  );
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-wiki-header {
+    background: transparent;
+  }
 }
 
 .rules-wiki-header-content {
@@ -39,6 +56,7 @@
 .rules-wiki-title-icon {
   flex-shrink: 0;
   color: var(--color-primary);
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-primary) 35%, transparent));
 }
 
 .rules-wiki-title {
@@ -67,6 +85,7 @@
   min-width: 0;
   width: 100%;
   overflow: hidden;
+  text-align: left;
 }
 
 /* 主内容区域 */
@@ -77,15 +96,34 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  text-align: left;
 }
 
-/* 内容滚动区域 - 需要明确高度 */
+.rules-wiki-article-scroll-inner {
+  min-height: 0;
+  padding-inline-end: calc(var(--spacing-sm) + 10px);
+  box-sizing: border-box;
+}
+
+/* 内容滚动区域 - 需要明确高度；极淡纹理点缀 */
 .rules-wiki-article-scroll {
   flex: 1 1 0%;
   min-height: 0;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
+  background-color: var(--color-bg-elevated);
+  background-image:
+    radial-gradient(
+      ellipse 120% 80% at 0% 0%,
+      color-mix(in srgb, var(--color-primary) 7%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 100% 20%,
+      color-mix(in srgb, var(--color-primary) 5%, transparent),
+      transparent 40%
+    );
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent) inset;
 }
 
 /* 确保 ScrollArea 内部滚动容器有正确高度 */
@@ -130,12 +168,139 @@
 
 /* 文章内容 */
 .rules-wiki-article {
+  position: relative;
   min-width: 0;
   padding: 0 var(--spacing-xl) var(--spacing-xl);
+  text-align: left;
+}
+
+/* 正文区淡点阵纹理 */
+.rules-wiki-article::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-primary) 18%, transparent) 0.6px,
+    transparent 0.6px
+  );
+  background-size: 14px 14px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 92%);
 }
 
 .rules-wiki-part {
+  position: relative;
   scroll-margin-top: var(--spacing-md);
+  padding: var(--spacing-md) 0 var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary)),
+    color-mix(in srgb, var(--color-bg-elevated) 99%, transparent)
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 5%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-border) 60%, transparent);
+}
+
+.rules-wiki-part.is-placeholder {
+  animation: none;
+}
+
+.rules-wiki-md-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.rules-wiki-part-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+}
+
+.rules-wiki-part-skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-text-primary) 6%, var(--color-bg-hover)),
+    color-mix(in srgb, var(--color-text-primary) 10%, var(--color-bg-hover)),
+    color-mix(in srgb, var(--color-text-primary) 6%, var(--color-bg-hover))
+  );
+  background-size: 200% 100%;
+  animation: rules-wiki-skeleton-shine 1.4s ease-in-out infinite;
+}
+
+.rules-wiki-part-skeleton-title {
+  height: 22px;
+  width: 42%;
+  max-width: 220px;
+}
+
+.rules-wiki-part-skeleton-line {
+  height: 12px;
+  width: 100%;
+}
+
+.rules-wiki-part-skeleton-line.short {
+  width: 72%;
+}
+
+@keyframes rules-wiki-skeleton-shine {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-wiki-part-skeleton {
+    animation: none;
+    background: color-mix(in srgb, var(--color-text-primary) 8%, var(--color-bg-hover));
+  }
+}
+
+.rules-wiki-part:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.rules-wiki-part:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.rules-wiki-part:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.rules-wiki-part:nth-child(n + 4) {
+  animation-delay: 100ms;
+}
+
+@keyframes rules-wiki-part-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-wiki-part {
+    animation: none;
+  }
 }
 
 .rules-wiki-part + .rules-wiki-part {
@@ -150,13 +315,22 @@
   flex-direction: column;
   flex: 0 0 clamp(240px, 28vw, 320px);
   width: clamp(240px, 28vw, 320px);
-  min-width: 240px;
+  min-width: 0;
   max-width: 320px;
   min-height: 0;
   overflow: hidden;
 }
 
-/* 侧边栏滚动区域 - 需要明确高度 */
+/* 侧栏宽度约束：仅限制宽度，不在子级制造第二套纵向滚动 */
+.rules-wiki-rail-scroll-content,
+.rules-wiki-rail-inner,
+.rules-wiki-toc-panel,
+.rules-wiki-toc-nav,
+.rules-wiki-toc-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .rules-wiki-rail-scroll {
   flex: 1 1 0%;
   min-height: 0;
@@ -173,8 +347,11 @@
   max-height: 100% !important;
 }
 
+/* 右侧为滚动条预留空间，避免文字贴边或被遮挡 */
 .rules-wiki-rail-scroll-content {
   padding: var(--spacing-md);
+  padding-inline-end: var(--spacing-md);
+  box-sizing: border-box;
 }
 
 .rules-wiki-rail-inner {
@@ -182,6 +359,12 @@
   flex-direction: column;
   gap: var(--spacing-md);
   min-width: 0;
+}
+
+.rules-wiki-rail-inner,
+.rules-wiki-toc-panel,
+.rules-wiki-toc-nav {
+  overflow: visible;
 }
 
 /* 面板通用样式 */
@@ -216,129 +399,221 @@
 .rules-wiki-toc-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  width: 100%;
 }
 
 /* 目录章节 */
 .rules-wiki-toc-section {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
-/* 章节标题按钮 */
-.rules-wiki-toc-part {
+/* 章节行：圆角矩形 hover / 选中，无左侧竖条 */
+.rules-wiki-toc-part-row {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 0;
   width: 100%;
-  text-align: left;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  max-width: 100%;
+  min-height: 34px;
+  padding: 2px;
   margin: 0;
-  border: none;
   border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  cursor: pointer;
-  line-height: 1.4;
-  background: transparent;
+  box-sizing: border-box;
   color: var(--color-text-primary);
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s cubic-bezier(0.33, 1, 0.68, 1),
+    color 0.2s ease;
 }
 
-.rules-wiki-toc-part:hover {
-  background: var(--color-bg-hover);
+.rules-wiki-toc-part-row:hover {
+  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-bg-hover));
 }
 
-.rules-wiki-toc-part.is-active {
-  background: var(--color-primary-bg);
+.rules-wiki-toc-part-row.is-active,
+.rules-wiki-toc-part-row.is-head-active,
+.rules-wiki-toc-part-row.is-active.is-active-via-h2 {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-hover));
+  color: var(--color-text-primary);
+  box-shadow: none;
+}
+
+.rules-wiki-toc-part-row.is-head-active .rules-wiki-toc-part-title,
+.rules-wiki-toc-part-row.is-active .rules-wiki-toc-part-title {
   color: var(--color-primary);
+  font-weight: 600;
 }
 
-.rules-wiki-toc-part-icon {
+.rules-wiki-toc-chevron-btn {
   flex-shrink: 0;
-  opacity: 0.6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  line-height: 0;
+  background: transparent;
+  color: inherit;
+  box-sizing: border-box;
+  transition: background 0.18s ease, opacity 0.2s ease, transform 0.18s ease;
 }
 
-.rules-wiki-toc-part.is-active .rules-wiki-toc-part-icon {
-  opacity: 1;
+.rules-wiki-toc-chevron-btn:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  transform: scale(1.05);
 }
 
-.rules-wiki-toc-part-label {
+.rules-wiki-toc-chevron-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.rules-wiki-toc-chevron-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.rules-wiki-toc-part-row:hover .rules-wiki-toc-chevron-icon,
+.rules-wiki-toc-part-row.is-active .rules-wiki-toc-chevron-icon {
+  opacity: 0.95;
+}
+
+.rules-wiki-toc-title-btn {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  width: 0;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin: 0;
+  padding: 6px var(--spacing-sm) 6px var(--spacing-2xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  box-sizing: border-box;
 }
 
-.rules-wiki-toc-part-hint {
-  font-size: var(--font-size-xs);
-  font-weight: 400;
+.rules-wiki-toc-part-text {
+  display: block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.rules-wiki-toc-part-title {
+  font-weight: 600;
+}
+
+.rules-wiki-toc-part-bracket {
+  font-weight: 500;
+  font-size: 0.88em;
   color: var(--color-text-secondary);
-  flex-shrink: 0;
 }
 
-.rules-wiki-toc-part.is-active .rules-wiki-toc-part-hint {
-  color: var(--color-primary);
-  opacity: 0.8;
+.rules-wiki-toc-part-row.is-active .rules-wiki-toc-part-bracket {
+  color: var(--color-text-secondary);
+}
+
+.rules-wiki-toc-title-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  outline-offset: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-wiki-toc-part-row,
+  .rules-wiki-toc-chevron-btn,
+  .rules-wiki-toc-title-btn,
+  .rules-wiki-toc-chevron-icon,
+  .rules-wiki-toc-item {
+    transition: none;
+  }
+
+  .rules-wiki-toc-chevron-btn:hover {
+    transform: none;
+  }
 }
 
 /* 子目录项容器 */
 .rules-wiki-toc-subitems {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding-left: var(--spacing-md);
+  gap: 3px;
+  padding: 2px 0 4px var(--spacing-sm);
   margin-top: 2px;
+  margin-left: calc(var(--spacing-sm) + 10px);
+  border-left: 1px dashed color-mix(in srgb, var(--color-border) 85%, transparent);
 }
 
-/* 子目录项按钮 */
+/* 子目录项：圆角矩形 hover / 选中 */
 .rules-wiki-toc-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-xs);
   width: 100%;
+  max-width: 100%;
   text-align: left;
-  padding: var(--spacing-2xs) var(--spacing-sm);
+  padding: 6px var(--spacing-sm);
   margin: 0;
   border: none;
-  border-radius: var(--radius-sm);
-  border-left: 2px solid transparent;
+  border-radius: var(--radius-md);
   background: transparent;
   font-size: var(--font-size-sm);
   cursor: pointer;
-  line-height: 1.4;
+  line-height: 1.45;
   color: var(--color-text-secondary);
-  transition: all 0.2s ease;
+  box-sizing: border-box;
+  transition:
+    background 0.2s cubic-bezier(0.33, 1, 0.68, 1),
+    color 0.2s ease;
 }
 
 .rules-wiki-toc-item:hover {
-  background: var(--color-bg-hover);
+  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-bg-hover));
   color: var(--color-text-primary);
 }
 
 .rules-wiki-toc-item.is-active {
-  background: var(--color-bg-hover);
+  background: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg-hover));
   color: var(--color-primary);
-  border-left-color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.rules-wiki-toc-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  outline-offset: -1px;
 }
 
 .rules-wiki-toc-item-indicator {
   flex-shrink: 0;
-  opacity: 0.4;
-}
-
-.rules-wiki-toc-item:hover .rules-wiki-toc-item-indicator,
-.rules-wiki-toc-item.is-active .rules-wiki-toc-item-indicator {
-  opacity: 0.8;
+  margin-top: 3px;
+  opacity: 0.45;
 }
 
 .rules-wiki-toc-label {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* 资料来源面板 */
@@ -438,23 +713,93 @@
   padding: var(--spacing-sm) var(--spacing-md) !important;
 }
 
-/* Markdown 内容样式 */
+/* Markdown 内容样式 — 统一左对齐内容列（含潜在 h4–h6） */
+.rules-wiki-md-column .rules-wiki-h1,
+.rules-wiki-md-column .rules-wiki-h2,
+.rules-wiki-md-column .rules-wiki-h3,
+.rules-wiki-md-column .rules-wiki-h4,
+.rules-wiki-md-column .rules-wiki-h5,
+.rules-wiki-md-column .rules-wiki-h6,
+.rules-wiki-md-column h1,
+.rules-wiki-md-column h2,
+.rules-wiki-md-column h3,
+.rules-wiki-md-column h4,
+.rules-wiki-md-column h5,
+.rules-wiki-md-column h6,
+.rules-wiki-md-column .rules-wiki-p,
+.rules-wiki-md-column .rules-wiki-ul,
+.rules-wiki-md-column .rules-wiki-ol,
+.rules-wiki-md-column .rules-wiki-quote,
+.rules-wiki-md-column .rules-wiki-pre,
+.rules-wiki-md-column .rules-wiki-table-wrap {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left;
+  align-self: stretch;
+}
+
+.rules-wiki-h1,
+.rules-wiki-h2,
+.rules-wiki-h3,
+.rules-wiki-h4,
+.rules-wiki-h5,
+.rules-wiki-h6,
+.rules-wiki-p {
+  padding-left: 0;
+  padding-right: 0;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .rules-wiki-h1 {
-  margin: 0 0 var(--spacing-md);
+  position: relative;
+  margin: 0 0 var(--spacing-lg);
+  padding: 0 0 var(--spacing-sm);
   font-size: var(--font-size-xl);
   font-weight: 700;
   scroll-margin-top: var(--spacing-md);
+  letter-spacing: -0.02em;
   color: var(--color-text-primary);
+  text-align: left;
+}
+
+.rules-wiki-h1::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(120px, 40%);
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 35%, transparent)
+  );
 }
 
 .rules-wiki-h2 {
+  position: relative;
   margin: var(--spacing-xl) 0 var(--spacing-md);
+  padding: 0 0 var(--spacing-xs);
   font-size: var(--font-size-lg);
   font-weight: 600;
-  padding-bottom: var(--spacing-xs);
-  border-bottom: 2px solid var(--color-border);
-  scroll-margin-top: var(--spacing-md);
+  border: none;
+  border-bottom: 2px solid color-mix(in srgb, var(--color-primary) 38%, var(--color-border));
+  border-radius: 0;
+  scroll-margin-top: calc(var(--spacing-md) + 8px);
   color: var(--color-text-primary);
+  background: transparent;
+  text-align: left;
+}
+
+.rules-wiki-h2-text {
+  display: block;
+}
+
+.rules-wiki-h2::before {
+  display: none;
 }
 
 .rules-wiki-h2:first-child {
@@ -463,9 +808,15 @@
 
 .rules-wiki-h3 {
   margin: var(--spacing-lg) 0 var(--spacing-sm);
+  padding: 0;
   font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text-primary);
+  text-align: left;
+}
+
+.rules-wiki-h3::before {
+  display: none;
 }
 
 .rules-wiki-p {
@@ -479,7 +830,38 @@
 .rules-wiki-ol {
   margin: 0 0 var(--spacing-md);
   padding-left: 1.5em;
-  line-height: 1.6;
+  line-height: 1.65;
+}
+
+.rules-wiki-ul {
+  list-style: none;
+  padding-left: 1.1em;
+}
+
+.rules-wiki-ul > .rules-wiki-li {
+  position: relative;
+  padding-left: 0.35em;
+}
+
+.rules-wiki-ul > .rules-wiki-li::before {
+  content: '';
+  position: absolute;
+  left: -1em;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 45%, transparent)
+  );
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.rules-wiki-ol > .rules-wiki-li::marker {
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .rules-wiki-li {
@@ -487,15 +869,76 @@
   color: var(--color-text-primary);
 }
 
+.rules-wiki-li input[type='checkbox'] {
+  margin-right: var(--spacing-xs);
+  vertical-align: middle;
+  accent-color: var(--color-primary);
+}
+
+.rules-wiki-li:has(> input[type='checkbox']:first-child) {
+  list-style: none;
+  margin-left: -1.25em;
+  padding-left: 0;
+}
+
+.rules-wiki-ul .rules-wiki-ul,
+.rules-wiki-ul .rules-wiki-ol,
+.rules-wiki-ol .rules-wiki-ul,
+.rules-wiki-ol .rules-wiki-ol {
+  margin-top: var(--spacing-2xs);
+  margin-bottom: var(--spacing-sm);
+}
+
 .rules-wiki-quote {
   margin: 0 0 var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-left: 3px solid var(--color-primary);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Ant Design Card 作为引用容器：浅色边框与背景（与 Lobe 主题变量一致） */
+.rules-wiki-quote-card.ant-card {
   font-size: var(--font-size-sm);
-  line-height: 1.55;
-  background: var(--color-bg-hover);
-  color: var(--color-text-secondary);
+  line-height: 1.65;
+  color: var(--color-text-secondary, var(--color-text-2));
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary, var(--color-bg-elevated));
+  border: 1px solid var(--color-border-subtle, var(--color-border));
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.rules-wiki-quote-card.ant-card .ant-card-body {
+  border: none;
+}
+
+.rules-wiki-quote-card .ant-card-body {
+  position: relative;
+}
+
+.rules-wiki-quote-card .ant-card-body::before {
+  content: '“';
+  position: absolute;
+  left: var(--spacing-lg);
+  top: calc(var(--spacing-xs) - 6px);
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  pointer-events: none;
+}
+
+.rules-wiki-quote-inner {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rules-wiki-quote-inner > .rules-wiki-p:last-child {
+  margin-bottom: 0;
 }
 
 .rules-wiki-code {
@@ -503,8 +946,13 @@
   font-size: 0.9em;
   padding: 2px var(--spacing-2xs);
   border-radius: var(--radius-sm);
-  background: var(--color-bg-code);
-  color: var(--color-text-code);
+  color: var(--color-primary);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-code)),
+    var(--color-bg-code)
+  );
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
 }
 
 .rules-wiki-pre {
@@ -512,48 +960,229 @@
   padding: var(--spacing-md);
   overflow: auto;
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
   font-size: var(--font-size-sm);
-  line-height: 1.5;
-  background: var(--color-bg-code);
+  line-height: 1.55;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--color-primary) 6%, var(--color-bg-code)), var(--color-bg-code)),
+    repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--color-text-primary) 3%, transparent) 0 1px,
+      transparent 1px 8px
+    );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+.rules-wiki-pre code {
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  background: transparent;
+  color: inherit;
 }
 
 .rules-wiki-table-wrap {
   margin: 0 0 var(--spacing-md);
   overflow-x: auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-lg);
+  /* 表格外框：略掺主题色，与单元格线区分 */
+  border: 1px solid color-mix(
+    in srgb,
+    var(--color-primary) 26%,
+    var(--color-border-subtle, var(--color-border))
+  );
+  background: var(--color-bg-secondary, var(--color-bg-elevated));
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
 }
 
 .rules-wiki-table {
   width: 100%;
+  min-width: 0;
   border-collapse: collapse;
+  border-spacing: 0;
   font-size: var(--font-size-sm);
+  /* 与容器同宽，单元格线铺满；外轮廓由 wrap 承担 */
+  box-sizing: border-box;
 }
 
-.rules-wiki-table th,
-.rules-wiki-table td {
+.rules-wiki-table .rules-wiki-th {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: color-mix(
+    in srgb,
+    var(--color-bg-hover) 90%,
+    var(--color-primary) 5%
+  );
+}
+
+/* 单元格完整四边网格（collapse 合并相邻线，避免双线） */
+.rules-wiki-table .rules-wiki-th,
+.rules-wiki-table .rules-wiki-td {
   padding: var(--control-gap-sm) var(--spacing-md);
   text-align: left;
-  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--color-border-subtle, var(--color-border)) 82%,
+    var(--color-primary) 18%
+  );
 }
 
-.rules-wiki-table th {
-  font-weight: 600;
-  background: var(--color-bg-hover);
+.rules-wiki-tbody .rules-wiki-tr:hover .rules-wiki-td {
+  background: color-mix(
+    in srgb,
+    var(--color-bg-hover) 86%,
+    var(--color-primary) 8%
+  );
 }
 
-.rules-wiki-table tr:last-child td {
-  border-bottom: none;
+.rules-wiki-md-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--spacing-md) 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-sizing: border-box;
+}
+
+.rules-wiki-del {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--color-text-secondary) 65%, transparent);
 }
 
 .rules-wiki-a {
+  display: inline;
   text-decoration: none;
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.rules-wiki-a:visited {
   color: var(--color-primary);
 }
 
-.rules-wiki-a:hover {
-  text-decoration: underline;
+.rules-wiki-a-text {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--ant-color-primary);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  transition: inherit;
+}
+
+.rules-wiki-a:hover .rules-wiki-a-text {
+  color: var(--ant-color-primary-hover, var(--lobe-color-primary-hover, var(--lobe-color-primary))) !important;  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.rules-wiki-strong {
+  font-weight: 700;
+  color: var(--color-primary);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.rules-wiki-em {
+  font-style: italic;
+  color: var(--color-primary);
+  padding: 0 2px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+.rules-wiki-hr {
+  margin: var(--spacing-xs) 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-border),
+    color-mix(in srgb, var(--color-primary) 35%, var(--color-border)),
+    var(--color-border),
+    transparent
+  );
+}
+
+/* 深浅色模式适配 */
+[data-theme='dark'] .rules-wiki-h1,
+[data-theme='dark'] .rules-wiki-h2,
+[data-theme='dark'] .rules-wiki-h3,
+[data-theme='dark'] .rules-wiki-p,
+[data-theme='dark'] .rules-wiki-li {
+  color: var(--color-text-primary);
+}
+
+[data-theme='dark'] .rules-wiki-article::before {
+  opacity: 0.1;
+}
+
+[data-theme='dark'] .rules-wiki-part {
+  background: color-mix(in srgb, var(--color-bg-elevated) 93%, var(--color-primary));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+}
+
+[data-theme='dark'] .rules-wiki-h2 {
+  background: transparent;
+  border-bottom-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+}
+
+[data-theme='dark'] .rules-wiki-toc-part-row:hover,
+[data-theme='dark'] .rules-wiki-toc-item:hover {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-hover));
+}
+
+[data-theme='dark'] .rules-wiki-toc-part-row.is-active,
+[data-theme='dark'] .rules-wiki-toc-part-row.is-head-active,
+[data-theme='dark'] .rules-wiki-toc-part-row.is-active.is-active-via-h2,
+[data-theme='dark'] .rules-wiki-toc-item.is-active {
+  background: color-mix(in srgb, var(--color-primary) 22%, var(--color-bg-hover));
+}
+
+[data-theme='dark'] .rules-wiki-quote-card.ant-card {
+  background: var(--color-bg-secondary, var(--color-bg-elevated));
+  border-color: var(--color-border-subtle, var(--color-border));
+  color: var(--color-text-secondary, var(--color-text-2));
+}
+
+[data-theme='dark'] .rules-wiki-quote-card .ant-card-body {
+  color: var(--color-text-secondary);
+}
+
+[data-theme='dark'] .rules-wiki-strong {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+[data-theme='dark'] .rules-wiki-table-wrap {
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 34%,
+    var(--color-border-subtle, var(--color-border))
+  );
+}
+
+[data-theme='dark'] .rules-wiki-table .rules-wiki-th,
+[data-theme='dark'] .rules-wiki-table .rules-wiki-td {
+  border-color: color-mix(
+    in srgb,
+    var(--color-border-subtle, var(--color-border)) 72%,
+    var(--color-primary) 28%
+  );
 }
 
 /* 响应式设计 */
@@ -607,14 +1236,12 @@
   .rules-wiki-sources-buttons {
     max-height: 150px;
     overflow-y: auto;
+    overflow-x: clip;
+    scrollbar-width: thin;
   }
 }
 
 @media (max-width: 640px) {
-  .rules-wiki-toc-part-hint {
-    display: none;
-  }
-
   .rules-wiki-rail {
     flex: 0 0 min(200px, 35vh);
     max-height: min(200px, 35vh);

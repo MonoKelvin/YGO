@@ -21,7 +21,6 @@ export default function DatabaseSection({ settings, onLibraryPageSizeChange }) {
     {
       label: '在线查询每页条数',
       desc: '设置在线API查询时每页显示的卡牌数量',
-      name: 'libraryPageSize',
       children: (
         <Select
           variant="outlined"
