@@ -1,167 +1,126 @@
-# YGO - 游戏王卡牌工具
+# YGO · 游戏王卡牌工具
 
-## 简介
+<p align="center">
+  <img src="src/assets/app/logo-256x256.png" alt="YGO 软件图标" width="144" height="144" />
+</p>
 
-YGO 是一款用于生成、浏览与管理游戏王卡牌数据的 **Electron + React** 桌面应用：卡牌 DIY、在线/本地卡库查询、卡组编辑与规则百科阅读。
+YGO 是一款基于 **Electron + React** 的，主要用于生成自制游戏王卡牌的桌面应用程序，其他功能包括：在线/本地查卡、管理卡组、查阅游戏王规则等。本项目全部代码由 AI 辅助生成，开发者负责审核与集成。鼠鼠我呀，真的是一行代码都不想写了～ (￣ω￣)
 
-本项目全部代码由 AI 辅助生成，开发者负责审核与集成。鼠鼠我呀，真的是一行代码都不想写了～ (￣ω￣)
+---
 
-### AI 开发工具
+## 能做什么
 
-开发与迭代中主要使用下列工具（链接仅供参考，服务条款以各官网为准）：
+| 模块 | 说明 |
+|------|------|
+| **卡牌生成器** | 自定义名称、密码、插图、类型（怪兽/魔法/陷阱）及攻防、种族、效果等，画布实时预览（可叠 Mold 素材）。 |
+| **卡牌浏览器** | 管理已保存的 DIY，搜索、删除，侧栏详情并可跳回生成器编辑。 |
+| **卡牌数据库** | 默认走 [YGOProDeck](https://ygoprodeck.com/api-guide/) 在线分页；可选本地全库（应用内更新或 `npm run cards:fetch`），卡图按需加载。 |
+| **我的卡组** | 列表与详情编辑（主卡组 / 额外 / 副卡组），数据保存在本机用户目录。 |
+| **规则百科** | 内置 Markdown 规则文档，按需加载。 |
+| **设置** | 明暗主题、数据库分页、自动保存、数据目录、关于等。 |
 
-- [Trae](https://www.trae.com.cn/) — 字节跳动 AI 原生 IDE（国内站）
-- [Cursor](https://cursor.com/) — AI 代码编辑器
-- [DeepSeek](https://www.deepseek.com/) — DeepSeek 大模型与对话
-
-## 功能特性
-
-- **卡牌生成器**：创建自定义游戏王卡牌
-  - 名称、8 位密码、插图
-  - 类型：怪兽 / 魔法 / 陷阱
-  - 怪兽：属性、等级（★）、种族、类别（通常/效果/仪式等）、攻防
-  - 魔法 / 陷阱：种类（通常、永续、反击等）
-  - 效果文本与实时画布预览（对齐常见实体卡排版，可叠加 `src/assets/Mold` 素材）
-
-- **卡牌浏览器**：列表缩略预览、搜索、删除；详情侧栏与「载入编辑」跳转生成页。
-
-- **卡牌数据库**（默认 **在线 API**，无需把全库打进安装包）：
-  - **在线查询**：通过 [YGOProDeck API](https://ygoprodeck.com/api-guide/) 按名称 / 类型 / 属性分页请求；卡图使用 CDN **动态加载**。
-  - **本地全库（可选）**：应用内「更新卡牌数据库」或 `npm run cards:fetch` 将全库 JSON 写入用户目录或开发目录（便于离线筛选）；卡图可在线加载，`cards:fetch:images` 可批量落盘小图。
-  - **加入卡组**：从数据库多选/单卡加入卡组（需先在「我的卡组」创建或打开目标卡组上下文）。
-
-- **我的卡组**：卡组列表（置顶、重命名、删除）、卡组详情编辑器（主卡组 / 额外 / 副卡组分区拖拽式整理），数据持久化在用户目录。
-
-- **规则百科**：内置 Markdown 规则文档与百科式导航（懒加载分包）。
-
-- **设置**：主题（浅 / 深 / 跟随系统）、卡牌数据库分页条数、自动保存、数据目录（Electron）、关于信息等。
+---
 
 ## 技术栈
 
-- **前端**：React 19、React Router、Zustand
-- **UI**：[@lobehub/ui](https://github.com/lobehub/lobe-ui)（含 ThemeProvider、Toast/Modal/ContextMenu、`ConfigProvider` + `motion/react` 动画上下文）；antd 作为 `@lobehub/ui` 的对等依赖
-- **桌面**：Electron（主进程 IPC、`preload` 注入 `window.electronAPI`）
-- **构建**：Vite、`electron-builder`
-- **文案**：Markdown（规则页，`react-markdown` + `remark-gfm`）
+React 19、React Router、Zustand；界面 [@lobehub/ui](https://github.com/lobehub/lobe-ui) + antd；桌面端 Electron（`preload` 提供 `window.electronAPI`）；构建用 Vite 与 electron-builder。
 
-## 开发
+---
 
-### 环境要求
+## 软件图标与素材说明
 
-- Node.js **>= 20.17**（推荐 **>= 22.12**，与 `electron-builder` 26、`rcedit` 5 的 engines 一致，避免安装告警）
-- npm >= 9
+- **主图标（概念图 / 母图）**：由 **[豆包 AI](https://www.doubao.com/)** 生成。  
+- **多尺寸图标**（如 `logo-16x16.png` … `logo-256x256.png`）：由 **[TRAE SOLO](https://solo.trae.cn/)** 从母图生成，放入 `src/assets/app/`。  
+- 打包时脚本会**自动选取其中尺寸最大的一张方形 `logo-NxN.png`**，生成 `build/icon.ico`、`build/icon.png` 及 NSIS 侧栏位图（见 `scripts/ensure-app-icons.mjs`、`scripts/prepare-nsis-installer-ui.mjs`）。
 
-### 安装依赖
+---
+
+## AI 辅助开发
+
+项目代码以 AI 辅助编写为主，人工审核与集成。常用工具包括 [Cursor](https://cursor.com/)、[Trae](https://www.trae.com.cn/)、[TRAE SOLO](https://solo.trae.cn/)、[DeepSeek](https://www.deepseek.com/) 等（具体条款以各产品官网为准）。
+
+---
+
+## 环境要求
+
+- **Node.js ≥ 20.17**（推荐 **≥ 22.12**，与 electron-builder 26、`rcedit` 等工具链一致，减少告警）
+- **npm ≥ 9**
 
 ```bash
 npm install
 ```
 
-本仓库克隆后请在本地执行 `npm install` 生成你自己的锁定文件；团队协作若需固定依赖版本，可自行约定是否私下共享 lock 或使用其它方式锁定。
+---
 
-### 桌面开发模式（Windows / macOS / Linux）
-
-本项目是 **Electron 桌面应用**。日常调试请使用：
+## 本地开发
 
 ```bash
 npm run dev
 ```
 
-会并行启动：
+同时启动 Vite（`http://127.0.0.1:5173`）与 Electron 窗口。**不要**只靠浏览器打开该地址做完整功能测试（无 `window.electronAPI`）。仅调界面时可 `npm run vite:dev`。
 
-1. **Vite**（`http://127.0.0.1:5173`）— 界面热更新
-2. **Electron** — 桌面窗口加载上述地址（与成品同一套壳）
+---
 
-请勿依赖「仅在浏览器打开 localhost」作为主流程；单独跑界面壳可执行 `npm run vite:dev` / `npm run renderer:dev`，此时 **无完整 Electron 能力**，依赖 `window.electronAPI` 的功能不可用。
+## 构建与发布安装包
 
-### 构建与打包
+| 命令 | 作用 |
+|------|------|
+| `npm run build` | 生产构建前端到 `dist/` |
+| `npm run desktop:build` | `build` + electron-builder（当前系统默认目标） |
+| **`npm run package:release`** | **推荐**：准备图标 → 生产构建 → 打安装包；**会先清空 `dist_electron`**，避免旧产物干扰 |
 
-```bash
-npm run build              # 生产构建：Vite（NODE_ENV=production）；Mold/字体/规则正文等由 Vite 打入 dist，不再整库复制到 dist/assets
-npm run desktop:build      # build + electron-builder（当前平台默认目标）
-npm run package:release    # 推荐：一键发布包（见下）
-```
+等价：`node scripts/package-release.mjs`。Windows 还可双击 `scripts\package-release.cmd`；macOS/Linux 见 `scripts/package-release.sh`。
 
-**一键发布安装包**（与 `desktop:build` 相比会固定生产环境、准备图标、校验产物并列出 `dist_electron`）：
+可选参数：`--win` / `--mac` / `--linux`；`--skip-build`（已有 `dist` 时跳过前端构建）。
 
-- 命令行：`npm run package:release` 或 `node scripts/package-release.mjs`
-- Windows 双击：`scripts\\package-release.cmd`
-- macOS / Linux：`chmod +x scripts/package-release.sh && ./scripts/package-release.sh`
+- **Windows**：NSIS 安装包（图形向导、扁平化侧栏/顶栏位图），默认 per-machine；图标由 `npm run icons:prepare`（或随 `package:release`）生成。  
+- **未配置签名**时脚本会设 `CSC_IDENTITY_AUTO_DISCOVERY=false`，避免 macOS 打包在无证书时卡住。  
+- **安装包体积**：大资源由 Vite 打进 `app.asar`；`extraResources` 仅带 `src/assets` 下的 `app/`、`docs/`、`cards/` 等子目录，勿整库重复拷贝以免体积暴涨。
 
-可选参数：`--win` / `--mac` / `--linux` 指定目标；`--skip-build` 在已有 `dist` 时跳过前端构建。
+---
 
-Windows 生成 **NSIS 图形安装向导**（[NSIS](https://nsis.sourceforge.io/) + **electron-builder 26**；向导为 **扁平化** 浅色内容区 + 自定义侧栏/顶栏位图）：默认安装到 **`Program Files`（perMachine）**，含协议页、结束页可勾选启动。`npm run icons:prepare` 会生成 `build/icon.ico` 与 **`build/installerSidebar.bmp`** 等（见 `scripts/prepare-nsis-installer-ui.mjs`）；**`scripts/nsis/installer.nsh`** 配置 MUI 背景/正文/进度列表等扁平配色。**`build/`** 为动态生成，勿提交 Git。
-
-若需更「商店化」的 Windows 安装体验，可自行研究 **MSIX**（electron-builder 的 `appx`/`msix` 目标）或 **WiX MSI**，与本仓库当前 NSIS 流程独立配置即可。
-
-> **安装包体积**：`Mold`、字体等已由 Vite 静态打入 `app.asar`，安装包内 **`resources/assets` 仅包含** `app/`（窗口图标）、`docs/`（规则百科外链 PDF、资源说明与 Markdown 源文件）、`cards/`（可选：若你在打包前放入 `src/assets/cards/data/cards.json` 等则一并带上）。请勿再整库复制 `src/assets` 到 `extraResources`，否则会与 asar 内资源重复、显著增大体积。
-
-> 说明：NSIS `.exe` 需在 **Windows** 环境打包；`.dmg` 需在 **macOS**；Linux 默认产出 **AppImage**。未配置代码签名时脚本会设置 `CSC_IDENTITY_AUTO_DISCOVERY=false` 以免 mac 打包卡住。
-
-### 卡牌数据库脚本
+## 其它脚本
 
 ```bash
-npm run cards:fetch         # 下载 YGOProDeck 全库 JSON（输出路径见脚本说明）
-npm run cards:fetch:images  # 可选：批量小图
+npm run cards:fetch          # 下载 YGOProDeck 全库 JSON（路径见脚本说明）
+npm run cards:fetch:images   # 可选：批量卡图小图
+npm run mold:check           # Mold 素材路径自检
+npm run icons:prepare        # 从 src/assets/app 生成 build 图标与 NSIS 位图
 ```
 
-应用内「更新卡牌数据库」会将全库 JSON 写入 **用户数据目录**，便于切换「本地全库」模式离线筛选。
+---
 
-### Mold 素材自检
-
-```bash
-npm run mold:check
-```
-
-## 项目结构（概要）
+## 目录结构
 
 ```
-YGO/
-├── .cursor/                 # Cursor 规则（可选，已纳入版本库）
-├── electron/
-│   ├── main.cjs             # 主进程入口
-│   ├── preload.js
-│   └── services/            # 数据目录、窗口状态、YGO 卡库/缓存等
-├── src/
-│   ├── App.jsx              # 根组件：主题、Toast/Modal、路由
-│   ├── main.jsx
-│   ├── assets/              # 全局样式、Mold、文档与静态资源
-│   ├── components/          # layout、card-preview、deck、settings、common…
-│   ├── config/              # 卡牌常量、Mold 路径、YGO API 筛选等
-│   ├── pages/
-│   │   ├── card-generator/  # 卡牌生成
-│   │   ├── card-browser/    # 已保存 DIY 列表
-│   │   ├── card-library/    # 在线/本地卡库、详情
-│   │   ├── deck/            # 卡组列表与编辑
-│   │   ├── rules/           # 规则百科
-│   │   └── settings/
-│   ├── services/            # 渲染进程侧 API 封装（如卡图缓存客户端）
-│   ├── store/               # Zustand（卡牌、设置、路由 UI、YGO 数据库状态）
-│   ├── theme/               # 明暗主题、Lobe antd token 构建
-│   └── utils/
-├── scripts/                 # mold-check、fetch-ygoprodeck、package-release、prepare-nsis-installer-ui 等
-├── vite.config.js
-├── package.json
-└── index.html
+electron/          # 主进程、preload、数据与窗口服务
+src/               # 渲染进程：页面、组件、store、主题、资源
+scripts/           # 打包、卡库拉取、NSIS 位图、Mold 检查等
+dist/              # Vite 产出（构建生成）
+dist_electron/     # 安装包与解包目录（构建生成）
 ```
 
-## 资源说明（Mold）
+---
 
-卡牌 Mold 位于 `src/assets/Mold/`，请使用包内 **PNG / JPG / WebP** 栅格资源。预览与导出依赖 Vite 打包路径。
+## Mold 卡框素材
 
-- **占位图**：`Mold/placeholder.png`。仅当某小图标路径缺失时在该槽位显示；卡框大图缺失时仍以画布底色绘制，不整张替换为占位图。
-- **路径约定**（与常见 Mold 包一致）：属性 `Attribute/...`、边框 `Frame/...`、魔陷图标 `Icon/` 或 `Attribute/cn/spell.png` 等，详见 `src/config/moldExpectedPaths.js` 与 `npm run mold:check` 输出。
+卡框等栅格图放在 `src/assets/Mold/`（PNG/JPG/WebP）。占位见 `Mold/placeholder.png`；路径约定与 `src/config/moldExpectedPaths.js`、`npm run mold:check` 一致。
 
-官方卡图与设计版权归 **KONAMI**，本项目仅用于本地 DIY 与学习交流，请勿将他人素材用于商业用途。
+游戏王官方卡图与设计版权归 **KONAMI**。本项目仅供本地学习与 DIY，请勿将第三方素材用于商业用途。
+
+---
 
 ## 赞助
 
-如果你觉得这个项目对你有帮助，欢迎扫描下方二维码进行赞助：
+若本项目对你有帮助，欢迎赞助支持：
 
 | 支付宝 | 微信 |
 | :---: | :---: |
 | <img src="src/assets/images/alipay_payment_code.jpg" width="200" height="231"> | <img src="src/assets/images/wechat_payment_code.jpg" width="200" height="219"> |
 
+---
+
 ## 许可证
 
-[MIT](LICENSE)（与 `package.json` 中 `license` 字段一致）
+[MIT](LICENSE)
