@@ -65,6 +65,27 @@
 
   --layout-sticky-offset: 88px;
   --rules-wiki-rail-chunk-max-h: 160px;
+
+  /** 基色与弥散光斑（深浅色在 [data-theme] 中覆盖） */
+  --ygo-app-bg-base: #f2f4f8;
+  --ygo-ambience-canvas: #eef1f6;
+  --ygo-nav-bg: rgba(248, 250, 252, 0.82);
+  --ygo-nav-handle-bg: rgba(255, 255, 255, 0.92);
+  /** 整体略压暗；第二块再弱一档 */
+  --ygo-ambience-blob-opacity: 0.44;
+  --ygo-ambience-blob-2-opacity: 0.34;
+  --ygo-ambience-blob-gradient: radial-gradient(
+    circle at 34% 38%,
+    rgba(104, 146, 220, 0.36) 0%,
+    rgba(183, 206, 242, 0.16) 46%,
+    transparent 72%
+  );
+  --ygo-ambience-blob-gradient-2: radial-gradient(
+    circle at 46% 44%,
+    rgba(90, 190, 175, 0.28) 0%,
+    rgba(160, 220, 200, 0.12) 48%,
+    transparent 72%
+  );
 }
 
 [data-theme='dark'] {
@@ -72,6 +93,45 @@
   --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
+  /** 比 #0d0d0d 更深，仍非纯黑；表面层在此基础上提亮 */
+  --ygo-app-bg-base: #0f0f10;
+  --ygo-ambience-canvas: #0a0b0e;
+  --ygo-nav-bg: rgba(12, 15, 14, 0.82);
+  --ygo-nav-handle-bg: rgba(28, 30, 35, 0.94);
+  --ygo-ambience-blob-opacity: 0.56;
+  --ygo-ambience-blob-2-opacity: 0.42;
+  --ygo-ambience-blob-gradient: radial-gradient(
+    circle at 38% 42%,
+    rgba(130, 150, 228, 0.55) 0%,
+    rgba(72, 86, 148, 0.28) 46%,
+    transparent 72%
+  );
+  --ygo-ambience-blob-gradient-2: radial-gradient(
+    circle at 48% 48%,
+    rgba(95, 210, 195, 0.38) 0%,
+    rgba(55, 120, 110, 0.18) 48%,
+    transparent 72%
+  );
+  --color-bg-layout: rgba(12, 13, 15, 0.98);
+  --color-bg-primary: rgba(10, 11, 13, 0.97);
+  --color-bg-container: rgba(22, 24, 28, 0.96);
+  --color-bg-elevated: rgba(30, 33, 38, 0.95);
+  --color-bg-secondary: rgba(18, 20, 24, 0.92);
+  --lobe-color-bg-layout: rgba(12, 13, 15, 0.98);
+  --lobe-color-bg-container: rgba(22, 24, 28, 0.96);
+  --lobe-color-bg-elevated: rgba(30, 33, 38, 0.95);
+}
+
+/** 浅色：与 token 基色一致，避免默认死白 */
+[data-theme='light'] body,
+[data-theme='light'] #root {
+  background-color: var(--ygo-app-bg-base);
+}
+
+/** 深色：与 Layout 弥散层、antd customToken 基色拉齐 */
+[data-theme='dark'] body,
+[data-theme='dark'] #root {
+  background-color: var(--ygo-app-bg-base);
 }
 
 * {

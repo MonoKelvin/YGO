@@ -35,6 +35,8 @@ const { resolveAppIconPath } = require('./services/appIcon.cjs');
 const { copyDirectoryContents } = require('./services/fileUtils.cjs');
 const ygoCardCache = require('./services/ygoCardCache.cjs');
 
+const { getContextMenuLabels } = require('./services/contextMenuI18n.cjs');
+
 const { readLibrary, replaceLibraryFromApi, invalidateDbCache } = require('./services/ygoLibraryDb.cjs');
 
 function sleep(ms) {
@@ -145,7 +147,7 @@ function createWindow() {
         minHeight: DEFAULT_BOUNDS.minHeight,
         frame: false,
         show: false,
-        backgroundColor: '#1a1d24',
+        backgroundColor: '#0a0b0e',
         icon: resolveAppIconPath(),
         webPreferences: {
             nodeIntegration: false,
@@ -212,38 +214,44 @@ function createWindow() {
 
 /**
  * Chromium 在 Electron 内默认不弹出右键菜单，需在主进程响应 context-menu。
- * 可编辑区域提供撤销/剪切/复制/粘贴等；选中文本或链接时提供复制能力。
+ * 使用系统 locale 的文案（见 contextMenuI18n.cjs），避免 role 菜单项固定为英文。
  */
 function attachRendererContextMenu(win) {
     if (!win || win.isDestroyed()) return;
 
     win.webContents.on('context-menu', (_event, params) => {
         const editFlags = params.editFlags || {};
+        const labels = getContextMenuLabels(app);
+        const wc = win.webContents;
 
         const template = [];
 
         if (params.isEditable) {
             template.push(
-                { role: 'undo', enabled: editFlags.canUndo },
-                { role: 'redo', enabled: editFlags.canRedo },
+                { label: labels.undo, enabled: editFlags.canUndo, click: () => wc.undo() },
+                { label: labels.redo, enabled: editFlags.canRedo, click: () => wc.redo() },
                 { type: 'separator' },
-                { role: 'cut', enabled: editFlags.canCut },
-                { role: 'copy', enabled: editFlags.canCopy },
-                { role: 'paste', enabled: editFlags.canPaste },
-                { role: 'pasteAndMatchStyle', enabled: editFlags.canPaste },
+                { label: labels.cut, enabled: editFlags.canCut, click: () => wc.cut() },
+                { label: labels.copy, enabled: editFlags.canCopy, click: () => wc.copy() },
+                { label: labels.paste, enabled: editFlags.canPaste, click: () => wc.paste() },
+                {
+                    label: labels.pasteAndMatchStyle,
+                    enabled: editFlags.canPaste,
+                    click: () => wc.pasteAndMatchStyle(),
+                },
                 { type: 'separator' },
-                { role: 'delete', enabled: editFlags.canDelete },
+                { label: labels.delete, enabled: editFlags.canDelete, click: () => wc.delete() },
                 { type: 'separator' },
-                { role: 'selectAll', enabled: editFlags.canSelectAll },
+                { label: labels.selectAll, enabled: editFlags.canSelectAll, click: () => wc.selectAll() },
             );
         } else {
             if (params.selectionText && String(params.selectionText).trim()) {
-                template.push({ role: 'copy' });
+                template.push({ label: labels.copy, click: () => wc.copy() });
             }
 
             if (params.linkURL) {
                 template.push({
-                    label: '复制链接地址',
+                    label: labels.copyLink,
 
                     click: () => {
                         clipboard.writeText(params.linkURL);
@@ -876,7 +884,7 @@ ipcMain.handle('open-external-link', async (_event, url, useSystemBrowser = true
                 minHeight: 600,
                 frame: false, // 无边框
                 show: false,
-                backgroundColor: '#1a1d24',
+                backgroundColor: '#0a0b0e',
                 icon: resolveAppIconPath(),
                 webPreferences: {
                     nodeIntegration: false,

@@ -8,12 +8,18 @@
     min-height: var(--ygo-titlebar-height, 40px);
     padding-block: 0 !important;
     padding-inline: 0 !important;
-    border-block-end: 1px solid var(--color-border, var(--lobe-color-border)) !important;
+    border-block-end: 1px solid var(--ant-color-border) !important;
     background-color: var(--color-bg-container, var(--lobe-color-bg-container)) !important;
     user-select: none;
     -webkit-app-region: drag;
     display: flex !important;
     align-items: center;
+}
+
+[data-theme='dark'] .ygo-titlebar-header {
+    background-color: rgba(14, 15, 18, 0.74) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 /** 可拖拽区域 */

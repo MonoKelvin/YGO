@@ -3,6 +3,138 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+/**
+ * 弥散光斑层：深浅色均显示；底色与 token 基色一致（variables 中 --ygo-app-bg-base）。
+ * 光斑强度由 --ygo-ambience-blob-opacity / --ygo-ambience-blob-gradient 控制。
+ */
+.app-layout-ambience {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--ygo-ambience-canvas, var(--ygo-app-bg-base, #1f2021));
+}
+
+/** 光斑共用：由 --primary / --secondary 变量区分位置与色相 */
+.app-layout-ambience__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(84px);
+  will-change: transform;
+  pointer-events: none;
+  animation: ygo-ambience-float-subtle 36s ease-in-out infinite alternate;
+}
+
+.app-layout-ambience__blob--primary {
+  width: min(56vw, 500px);
+  height: min(56vw, 500px);
+  top: -10%;
+  left: -5%;
+  opacity: var(--ygo-ambience-blob-opacity, 0.3);
+  background: var(
+    --ygo-ambience-blob-gradient,
+    radial-gradient(
+      circle at 40% 44%,
+      rgba(150, 168, 235, 0.4) 0%,
+      rgba(95, 110, 175, 0.26) 46%,
+      transparent 72%
+    )
+  );
+}
+
+/** 第二块：相对主光斑略靠右下，色相偏青绿，整体略弱 */
+.app-layout-ambience__blob--secondary {
+  width: min(42vw, 480px);
+  height: min(42vw, 480px);
+  top: 16%;
+  left: 10%;
+  opacity: var(--ygo-ambience-blob-2-opacity, 0.38);
+  background: var(
+    --ygo-ambience-blob-gradient-2,
+    radial-gradient(
+      circle at 44% 48%,
+      rgba(123, 120, 200, 0.45) 0%,
+      rgba(104, 60, 154, 0.22) 48%,
+      transparent 72%
+    )
+  );
+  animation-duration: 42s;
+  animation-delay: -10s;
+}
+
+@keyframes ygo-ambience-float-subtle {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(2%, 1.5%) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-layout-ambience__blob {
+    animation: none !important;
+  }
+}
+
+/** 侧栏内 ScrollArea：去掉默认 layout 实色，透出 --ygo-nav-bg */
+.app-sidenav-menu-scroll {
+  background: transparent !important;
+}
+
+[data-theme='dark'] .app-sidenav-body .ant-menu,
+[data-theme='dark'] .app-sidenav-footer .ant-menu {
+  background: transparent !important;
+}
+
+[data-theme='light'] .app-sidenav-body .ant-menu,
+[data-theme='light'] .app-sidenav-footer .ant-menu {
+  background: transparent !important;
+}
+
+/** 侧栏外壳：深色下略透明，透出背后微光 */
+.app-sidenav-shell {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 0;
+  height: 100%;
+  background: transparent !important;
+}
+
+.app-sidenav-shell > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.app-sidenav-shell .ant-menu,
+.app-sidenav-shell .ant-menu-root,
+.app-sidenav-shell .ant-menu-inline {
+  background: transparent !important;
+}
+
+[data-theme='dark'] .app-main-inner {
+  background: rgba(12, 13, 15, 0.44);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+[data-theme='light'] .app-main-inner {
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.app-layout > :not(.app-layout-ambience) {
+  position: relative;
+  z-index: 1;
 }
 
 .app-main-shell {

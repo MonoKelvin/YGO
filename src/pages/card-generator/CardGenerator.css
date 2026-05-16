@@ -33,6 +33,7 @@
 .card-generator-scroll {
   border-radius: var(--radius-md);
   min-height: 0;
+  background: transparent !important;
 }
 
 /**
@@ -192,7 +193,7 @@ div.card-generator-preview-placeholder .anticon {
 .card-generator-preview-paused-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(31, 32, 33, 0.72);
 }
 
 /** 模糊圆角矩形 */

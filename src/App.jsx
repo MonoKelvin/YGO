@@ -8,7 +8,7 @@ import {
 import { motion } from 'motion/react'
 import { Loader2 } from 'lucide-react'
 import { Routes, Route, useLocation } from 'react-router-dom'
-import { lazy, Suspense, useEffect, useMemo, useState, useRef } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useRef } from 'react'
 
 import CardGenerator from './pages/card-generator/CardGenerator'
 import CardBrowser from './pages/card-browser/CardBrowser'
@@ -207,6 +207,29 @@ function AppContent() {
         }
         return { primaryColor: primaryColorKey, neutralColor: 'gray' }
     }, [primaryColorKey])
+
+    /**
+     * 统一深浅主题背景 token，避免局部出现纯黑（如 ScrollArea、Modal 容器）。
+     * 深色基于 #0b0b0c 向上分层；浅色保持低对比暖灰层级。
+     */
+    const ygoSurfaceCustomToken = useCallback((theme) => {
+        if (theme.isDarkMode) {
+            return {
+                colorBgBase: '#0f0f10',
+                colorBgLayout: '#0a0b0e',
+                colorBgContainer: '#14161a',
+                colorBgElevated: '#1a1d22',
+                colorBgSpotlight: '#22262c',
+            }
+        }
+        return {
+            colorBgBase: '#f2f4f8',
+            colorBgLayout: '#eef1f6',
+            colorBgContainer: '#ffffff',
+            colorBgElevated: '#fafbfc',
+        }
+    }, [])
+
     const [initialized, setInitialized] = useState(false)
 
     // 从 Electron 读回持久化设置并同步到 Zustand；超时仍解锁 UI。安全定时器防止极端情况下 finally 未执行导致一直占位。
@@ -273,7 +296,12 @@ function AppContent() {
     const themeProviderKey = `${resolvedAppearance}:${primaryColorKey ?? 'default'}`
 
     return (
-        <ThemeProvider key={themeProviderKey} appearance={resolvedAppearance} customTheme={customTheme}>
+        <ThemeProvider
+            key={themeProviderKey}
+            appearance={resolvedAppearance}
+            customTheme={customTheme}
+            customToken={ygoSurfaceCustomToken}
+        >
             <ToastHost />
             <ModalHost />
             <ContextMenuHost />

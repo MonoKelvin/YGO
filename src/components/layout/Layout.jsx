@@ -102,41 +102,60 @@ export default function LayoutComponent({ children }) {
     <>
       <PersistNavigation />
       <div className="app-layout">
+        <div className="app-layout-ambience" aria-hidden="true">
+          <span className="app-layout-ambience__blob app-layout-ambience__blob--primary" />
+          <span className="app-layout-ambience__blob app-layout-ambience__blob--secondary" />
+        </div>
         <TitleBar />
         <div className="app-main-shell">
-          <DraggableSideNav
-            expand={!collapsed}
-            header={() => (
-              <div className="app-logo-row">
-                <span className="logo-text">YGO</span>
-              </div>
-            )}
-            body={(expand) => (
-              <ScrollArea style={{ height: '100%' }}>
+          <div className="app-sidenav-shell">
+            <DraggableSideNav
+              expand={!collapsed}
+              backgroundColor="var(--ygo-nav-bg)"
+              classNames={{
+                body: 'app-sidenav-body',
+                footer: 'app-sidenav-footer',
+              }}
+              styles={{
+                handle: {
+                  background: 'var(--ygo-nav-handle-bg)',
+                  backdropFilter: 'none',
+                  WebkitBackdropFilter: 'none',
+                  filter: 'none',
+                },
+              }}
+              header={() => (
+                <div className="app-logo-row">
+                  <span className="logo-text">YGO</span>
+                </div>
+              )}
+              body={(expand) => (
+                <ScrollArea className="app-sidenav-menu-scroll" style={{ height: '100%' }}>
+                  <Menu
+                    mode="inline"
+                    inlineCollapsed={!expand}
+                    selectedKeys={primarySelectedKey ? [primarySelectedKey] : []}
+                    onClick={handleMenuClick}
+                    items={navItems}
+                    variant="borderless"
+                  />
+                </ScrollArea>
+              )}
+              footer={(expand) => (
                 <Menu
                   mode="inline"
                   inlineCollapsed={!expand}
-                  selectedKeys={primarySelectedKey ? [primarySelectedKey] : []}
+                  selectedKeys={settingsSelected ? ['/settings'] : []}
                   onClick={handleMenuClick}
-                  items={navItems}
+                  items={settingsItems}
                   variant="borderless"
                 />
-              </ScrollArea>
-            )}
-            footer={(expand) => (
-              <Menu
-                mode="inline"
-                inlineCollapsed={!expand}
-                selectedKeys={settingsSelected ? ['/settings'] : []}
-                onClick={handleMenuClick}
-                items={settingsItems}
-                variant="borderless"
-              />
-            )}
-            onExpandChange={handleToggleSidebar}
-            width={220}
-            minWidth={54}
-          />
+              )}
+              onExpandChange={handleToggleSidebar}
+              width={220}
+              minWidth={54}
+            />
+          </div>
           <div className="app-main-inner">
             <main ref={contentRef} className="app-content">
               {children}
