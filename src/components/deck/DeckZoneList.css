@@ -1,0 +1,9 @@
+.deck-zone-list {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.deck-zone-list .deck-zone-card-flow {
+  width: 100%;
+}

@@ -1,9 +1,5 @@
 .settings-page {
-    width: 100%;
-    max-width: min(720px, 100%);
-    margin: 0 auto;
-    padding: var(--spacing-xl);
-    padding-bottom: calc(var(--spacing-xl) * 2);
+    padding-bottom: var(--spacing-xl);
     box-sizing: border-box;
 }
 
@@ -11,13 +7,6 @@
     margin-bottom: var(--spacing-xl);
 }
 
-.page-title {
-    font-size: var(--font-size-xl);
-    font-weight: 600;
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
 
 .settings-title {
     font-size: var(--font-size-xl);
@@ -246,6 +235,13 @@
     font-size: var(--font-size-md);
     color: var(--color-text-3);
     line-height: 1.6;
+}
+
+.about-repo {
+    margin: 0 0 var(--spacing-md);
+    font-size: var(--font-size-md);
+    line-height: 1.65;
+    color: var(--color-text-2);
 }
 
 .about-desc {

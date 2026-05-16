@@ -1,8 +1,35 @@
 .deck-detail-page {
-  width: 100%;
-  max-width: min(640px, 100%);
-  margin: 0 auto;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.deck-detail-toolbar {
+  flex: 0 0 auto;
+  margin-bottom: var(--spacing-lg);
+}
+
+.deck-detail-back.ant-btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+  height: auto;
+  min-height: var(--control-height-sm, 32px);
+  padding-block: var(--spacing-sm) !important;
+  padding-inline: var(--spacing-sm) !important;
+  line-height: 1.5;
+}
+
+.deck-detail-footer {
+  padding-bottom: var(--spacing-xl);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.deck-detail-footer .ant-btn {
+  width: auto;
+  flex: 0 0 auto;
 }
 
 .deck-detail-loading {
@@ -10,12 +37,5 @@
   align-items: center;
   justify-content: center;
   min-height: 240px;
-}
-
-.deck-detail-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  flex: 1 1 auto;
 }

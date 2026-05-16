@@ -7,11 +7,14 @@ import {
     useTransition,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast, Button, Segmented } from '@lobehub/ui'
+import { toast } from '@lobehub/ui'
+import PageHeader from '../../components/layout/PageHeader'
 import CardLibraryAddToDeckModal from '../../components/card-library/CardLibraryAddToDeckModal'
 import CardLibraryToolbarTable from '../../components/card-library/CardLibraryToolbarTable'
-import { Library, RefreshCw } from 'lucide-react'
-import useYgoDatabaseStore from '../../store/useYgoDatabaseStore'
+import { Library } from 'lucide-react'
+import useYgoDatabaseStore, {
+    filterDeckIdsEligibleForAdd,
+} from '../../store/useYgoDatabaseStore'
 import useRouteUiStore from '../../store/useRouteUiStore'
 import useCardStore from '../../store/useStore'
 import { persistUserSettingsToDisk } from '../../utils/persistUserSettings'
@@ -24,6 +27,7 @@ import {
 import { ensureYgoCardCached } from '../../services/ygoCardCacheClient'
 import {
     downloadCardImage,
+    notifyYgoApiError,
     sortDecksForAddPicker,
 } from './cardLibraryHelpers'
 import { useCardLibraryTableColumns } from './useCardLibraryTableColumns'
@@ -62,8 +66,8 @@ export default function CardLibrary() {
         addCardToDeck,
         addCardsToDeck,
         decks,
+        cardSnapshots,
         lastAddTargetDeckId,
-        lastActiveDeckId,
     } = useYgoDatabaseStore()
 
     const libraryLocalPage = useRouteUiStore((s) => s.libraryLocalPage)
@@ -129,6 +133,16 @@ export default function CardLibrary() {
         setSearchInput(useYgoDatabaseStore.getState().filterSearch || '')
     }, [libraryMode])
 
+    useEffect(() => {
+        if (libraryMode !== 'online' || !apiError) return
+        notifyYgoApiError(apiError)
+    }, [apiError, libraryMode])
+
+    useEffect(() => {
+        if (libraryMode !== 'local' || !error) return
+        toast.error(error)
+    }, [error, libraryMode])
+
     const filteredLocal = useMemo(() => {
         if (libraryMode !== 'online') {
             let list = cards
@@ -168,13 +182,17 @@ export default function CardLibrary() {
 
     const [addModalOpen, setAddModalOpen] = useState(false)
     const [addModalCards, setAddModalCards] = useState([])
-    const [pickDeckId, setPickDeckId] = useState(null)
+    const [pickDeckIds, setPickDeckIds] = useState([])
 
     const decksForPicker = useMemo(
         () => sortDecksForAddPicker(decks, lastAddTargetDeckId),
         [decks, lastAddTargetDeckId],
     )
 
+    /**
+     * 打开加入卡组弹窗：默认勾选上次目标卡组（若仍可容纳当前卡）；
+     * 已满 3 张、主/额外区满等通过 canAddCardsToDeck 禁用并 Tooltip 提示。
+     */
     const openAddToDeckModal = useCallback(
         (cardOrList) => {
             const list = Array.isArray(cardOrList) ? cardOrList : [cardOrList]
@@ -184,35 +202,101 @@ export default function CardLibrary() {
                 return
             }
             setAddModalCards(list)
-            const sorted = sortDecksForAddPicker(decks, lastAddTargetDeckId)
             const preferred =
-                lastAddTargetDeckId ||
-                lastActiveDeckId ||
-                sorted[0]?.id ||
-                null
-            setPickDeckId(preferred)
+                lastAddTargetDeckId &&
+                decks.some((d) => d.id === lastAddTargetDeckId)
+                    ? [lastAddTargetDeckId]
+                    : []
+            setPickDeckIds(
+                filterDeckIdsEligibleForAdd(
+                    preferred,
+                    decks,
+                    list,
+                    cardSnapshots,
+                ),
+            )
             setAddModalOpen(true)
         },
-        [decks, lastActiveDeckId, lastAddTargetDeckId],
+        [cardSnapshots, decks, lastAddTargetDeckId],
+    )
+
+    /** 弹窗打开期间，若卡组数据变化则剔除已不可选的预选 id */
+    useEffect(() => {
+        if (!addModalOpen || !addModalCards.length) return
+        setPickDeckIds((prev) =>
+            filterDeckIdsEligibleForAdd(
+                prev,
+                decks,
+                addModalCards,
+                cardSnapshots,
+            ),
+        )
+    }, [addModalOpen, addModalCards, decks, cardSnapshots])
+
+    const togglePickDeckId = useCallback(
+        (deckId, checked) => {
+            if (checked) {
+                const deck = decks.find((d) => d.id === deckId)
+                if (
+                    !deck ||
+                    !filterDeckIdsEligibleForAdd(
+                        [deckId],
+                        decks,
+                        addModalCards,
+                        cardSnapshots,
+                    ).length
+                ) {
+                    return
+                }
+            }
+            setPickDeckIds((prev) => {
+                if (checked) {
+                    return prev.includes(deckId) ? prev : [...prev, deckId]
+                }
+                return prev.filter((id) => id !== deckId)
+            })
+        },
+        [addModalCards, cardSnapshots, decks],
     )
 
     const confirmAddToDeck = useCallback(() => {
-        if (!pickDeckId) {
-            toast.warning('请选择目标卡组')
+        if (!pickDeckIds.length) {
+            toast.warning('请至少选择一个卡组')
             return
         }
-        if (addModalCards.length === 1) {
-            const r = addCardToDeck(addModalCards[0], pickDeckId)
-            if (!r.ok) message.warning(r.reason)
-            else message.success('已加入卡组')
+        let okCount = 0
+        let lastReason = null
+        for (const deckId of pickDeckIds) {
+            const r =
+                addModalCards.length === 1
+                    ? addCardToDeck(addModalCards[0], deckId)
+                    : addCardsToDeck(addModalCards, deckId)
+            if (r.ok) okCount += 1
+            else lastReason = r.reason
+        }
+        if (okCount === pickDeckIds.length) {
+            if (addModalCards.length === 1) {
+                toast.success(
+                    okCount > 1
+                        ? `已加入 ${okCount} 个卡组`
+                        : '已加入卡组',
+                )
+            } else {
+                toast.success(
+                    okCount > 1
+                        ? `已将 ${addModalCards.length} 张加入 ${okCount} 个卡组`
+                        : `已加入 ${addModalCards.length} 张到卡组`,
+                )
+            }
+        } else if (okCount > 0) {
+            toast.warning(lastReason || '部分卡组加入失败')
         } else {
-            const r = addCardsToDeck(addModalCards, pickDeckId)
-            if (!r.ok) toast.warning(r.reason)
-            else toast.success(`已加入 ${addModalCards.length} 张到卡组`)
+            toast.warning(lastReason || '加入失败')
         }
         setAddModalOpen(false)
         setAddModalCards([])
-    }, [addCardToDeck, addCardsToDeck, addModalCards, pickDeckId])
+        setPickDeckIds([])
+    }, [addCardToDeck, addCardsToDeck, addModalCards, pickDeckIds])
 
     const handleToggleFavorite = useCallback(
         (card) => {
@@ -319,13 +403,15 @@ export default function CardLibrary() {
         [setLibrarySelectedRowKeys],
     )
 
-    const showTable =
-        libraryMode === 'online' ||
-        (libraryMode === 'local' && !missingDb && cards.length > 0)
+    const listHasRows = pageRows.length > 0
+    const showListTable =
+        !loading &&
+        listHasRows &&
+        (libraryMode === 'online' || (libraryMode === 'local' && !missingDb))
 
     /** 桌面版：后台缓存当前列表卡图与元数据到数据目录，便于离线展示与卡组界面加速 */
     useEffect(() => {
-        if (!showTable || !pageRows?.length) return undefined
+        if (!showListTable || !pageRows?.length) return undefined
         const api = typeof window !== 'undefined' ? window.electronAPI : null
         if (!api?.ygoCardCacheEnsure) return undefined
         let cancelled = false
@@ -344,74 +430,49 @@ export default function CardLibrary() {
             cancelled = true
             window.clearTimeout(timer)
         }
-    }, [showTable, pageRows])
+    }, [showListTable, pageRows])
 
     return (
-        <div className="card-library">
-            <div className="card-library-header">
-                <h1 className="page-title">
-                    <Library size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-                    卡牌数据库
-                </h1>
-                <div className="card-library-toolbar-row">
-                    <Segmented
-                        variant="outlined"
-                        options={[
-                            { label: '在线查询（API）', value: 'online' },
-                            { label: '本地全库', value: 'local' },
-                        ]}
-                        value={libraryMode}
-                        onChange={(v) =>
-                            startModeTransition(() => {
-                                setLibraryMode(v)
-                            })
-                        }
-                    />
-                    <div className="card-library-header-spacer" aria-hidden="true" />
-                    <Button variant="outlined" icon={<RefreshCw size={16} />} onClick={handleUpdateDb}>
-                        更新数据库
-                    </Button>
-                </div>
-                <p className="card-library-hint">
-                    在线模式：按名称、类型、属性调用{' '}
-                    <a
-                        href="https://ygoprodeck.com/api-guide/"
-                        className="card-library-api-link"
-                        onClick={(e) => {
-                            e.preventDefault()
-                            openExternalLink('https://ygoprodeck.com/api-guide/')
-                        }}
-                    >
-                        YGOProDeck API
-                    </a>{' '}
-                    分页查询，每页条数可在「设置」中调整。双击一行打开卡牌详情。
-                </p>
-                {libraryMode === 'local' && meta?.fetchedAt && (
-                    <p className="card-library-meta">
+        <div className="card-library ygo-page-shell">
+            <PageHeader
+                className="card-library-page-header"
+                title="卡牌数据库"
+                icon={Library}
+                lead={
+                    <>
+                        在线模式：按名称、类型、属性调用{' '}
+                        <a
+                            href="https://ygoprodeck.com/api-guide/"
+                            className="card-library-api-link"
+                            onClick={(e) => {
+                                e.preventDefault()
+                                openExternalLink('https://ygoprodeck.com/api-guide/')
+                            }}
+                        >
+                            YGOProDeck API
+                        </a>{' '}
+                        分页查询，每页条数可在「设置」中调整。双击一行打开卡牌详情。
+                    </>
+                }
+            >
+                {libraryMode === 'local' && meta?.fetchedAt ? (
+                    <p className="ygo-page-lead card-library-meta">
                         本地数据：{meta.fetchedAt} · {meta.count ?? cards.length} 张 · 来源{' '}
                         {meta.source}
                         {dbSource === 'userdata' ? '（用户目录）' : '（安装包）'}
                     </p>
-                )}
-            </div>
+                ) : null}
+            </PageHeader>
 
-            {libraryMode === 'local' && missingDb && !loading && (
-                <div className="card-library-empty-db">
-                    <p>未找到本地全库 JSON。</p>
-                    <p className="hint">
-                        点击上方「更新数据库」下载到用户目录，或在开发环境执行{' '}
-                        <code>npm run cards:fetch</code> 写入 <code>src/assets/cards/data/</code> 后重新打包。
-                    </p>
-                </div>
-            )}
-
-            {(error || apiError) && (
-                <div className="card-library-error">{error || apiError}</div>
-            )}
-
-            {showTable && (
-                <CardLibraryToolbarTable
+            <CardLibraryToolbarTable
                     libraryMode={libraryMode}
+                    missingDb={missingDb}
+                    onLibraryModeChange={(v) =>
+                        startModeTransition(() => {
+                            setLibraryMode(v)
+                        })
+                    }
+                    onRefreshDatabase={handleUpdateDb}
                     searchInput={searchInput}
                     setSearchInput={setSearchInput}
                     typeOptions={typeOptions}
@@ -439,19 +500,21 @@ export default function CardLibrary() {
                     libraryLocalPage={libraryLocalPage}
                     localTotalPages={localTotalPages}
                     setLibraryLocalPage={setLibraryLocalPage}
+                    showListTable={showListTable}
                 />
-            )}
 
             <CardLibraryAddToDeckModal
                 open={addModalOpen}
                 addModalCards={addModalCards}
                 decksForPicker={decksForPicker}
-                pickDeckId={pickDeckId}
-                setPickDeckId={setPickDeckId}
+                cardSnapshots={cardSnapshots}
+                pickDeckIds={pickDeckIds}
+                onToggleDeckId={togglePickDeckId}
                 onOk={confirmAddToDeck}
                 onCancel={() => {
                     setAddModalOpen(false)
                     setAddModalCards([])
+                    setPickDeckIds([])
                 }}
             />
         </div>

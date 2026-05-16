@@ -1,0 +1,67 @@
+/** 加入卡组弹窗 */
+.card-library-add-deck-modal {
+  width: min(420px, calc(100vw - 2rem)) !important;
+  max-width: min(420px, calc(100vw - 2rem)) !important;
+}
+
+.card-library-add-deck-list {
+  max-height: min(52vh, 360px);
+  overflow-y: auto;
+}
+
+.card-library-add-deck-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+  min-width: 0;
+}
+
+.card-library-add-deck-row--disabled {
+  opacity: 0.72;
+}
+
+/** 文本 + 感叹号横向排列，图标紧跟文本后（非行末对齐） */
+.card-library-add-deck-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  user-select: none;
+}
+
+.card-library-add-deck-row--disabled .card-library-add-deck-main {
+  cursor: not-allowed;
+}
+
+.card-library-add-deck-main:focus-visible {
+  outline: 2px solid var(--lobe-color-primary, var(--color-primary));
+  outline-offset: 2px;
+  border-radius: var(--radius-xs, 2px);
+}
+
+.card-library-add-deck-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-library-add-deck-warn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 2px;
+  border: none;
+  border-radius: 999px;
+  line-height: 0;
+  color: var(--lobe-color-warning, #d89614);
+  background: transparent;
+  cursor: help;
+}

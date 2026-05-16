@@ -170,7 +170,7 @@ export default function CardDetail() {
             : []
 
     return (
-        <div className="card-detail-page">
+        <div className="card-detail-page ygo-page-shell ygo-page-shell--detail">
             <div className="card-detail-toolbar">
                 <Button
                     type="text"

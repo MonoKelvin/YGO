@@ -23,6 +23,7 @@ import {
     Shield,
     Sparkles,
 } from 'lucide-react'
+import PageHeader from '../../components/layout/PageHeader'
 import CardPreviewPanel from './CardPreviewPanel'
 import useCardStore from '../../store/useStore'
 import {
@@ -869,7 +870,7 @@ export default function CardGenerator() {
     return (
         <Flexbox
             vertical
-            className="card-generator"
+            className="card-generator ygo-page-shell ygo-page-shell--full"
             style={{
                 flex: 1,
                 minHeight: 0,
@@ -880,12 +881,7 @@ export default function CardGenerator() {
             }}
         >
             {/* 标题固定；主内容区内仅左侧参数区滚动 */}
-            <Flexbox vertical gap={8} style={{ flexShrink: 0, paddingBottom: 12 }}>
-                <h1 className="page-title" style={{ margin: 0 }}>
-                    <Home size={26} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-                    卡牌生成器
-                </h1>
-            </Flexbox>
+            <PageHeader title="卡牌生成器" icon={Home} iconSize={22} />
 
             <Flexbox
                 horizontal

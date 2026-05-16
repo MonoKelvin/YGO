@@ -1,10 +1,18 @@
 import { create } from 'zustand'
+import {
+  DEFAULT_DECK_ID,
+  ensureDefaultDeckInList,
+  isDefaultDeckId,
+} from '../config/deckConstants'
 import { isExtraDeckCard, slimCardForDeck } from '../config/ygoCardUtils'
 import { queryCards } from '../services/ygoprodeckApi'
+import { nextDeckCopyName } from '../utils/deckCopyName'
 
+/** 卡组容量与同名张数上限（OCG 常见规则简化，用于加入校验与弹窗预览） */
 const MAX_MAIN = 60
 const MAX_EXTRA = 15
 const MAX_SIDE = 15
+/** 主+副或额外区内，单卡 id 最多 3 张 */
 const MAX_COPY = 3
 
 function genDeckId() {
@@ -154,34 +162,83 @@ function tryAddOneCardToDeckCopy(deck, card, snapshotsBase) {
   return { ok: true, deck, snapshots: snapNext }
 }
 
+/**
+ * 在内存副本上模拟将多张卡依次加入卡组（不修改 store）。
+ * 用于「加入卡组」弹窗：禁用不可选行、Tooltip 展示失败原因。
+ */
+export function canAddCardsToDeck(deck, cards, snapshotsBase = {}) {
+  if (!deck || !Array.isArray(cards) || !cards.length) {
+    return { ok: false, reason: '无卡牌' }
+  }
+  let deckCopy = {
+    ...deck,
+    main: [...(deck.main || [])],
+    extra: [...(deck.extra || [])],
+    side: [...(deck.side || [])],
+  }
+  let snapshots = { ...snapshotsBase }
+  for (const card of cards) {
+    const r = tryAddOneCardToDeckCopy(deckCopy, card, snapshots)
+    if (!r.ok) return { ok: false, reason: r.reason }
+    deckCopy = r.deck
+    snapshots = r.snapshots
+  }
+  return { ok: true }
+}
+
+/** 从候选 id 中保留仍可加入给定卡牌的卡组（已满 3 张等同名等会排除） */
+export function filterDeckIdsEligibleForAdd(
+  deckIds,
+  decks,
+  cards,
+  snapshotsBase = {},
+) {
+  if (!Array.isArray(deckIds) || !deckIds.length) return []
+  const byId = new Map((decks || []).map((d) => [d.id, d]))
+  return deckIds.filter((id) => {
+    const deck = byId.get(id)
+    return deck && canAddCardsToDeck(deck, cards, snapshotsBase).ok
+  })
+}
+
 function normalizeFilePayload(raw) {
   if (raw && raw.version === 2 && Array.isArray(raw.decks)) {
-    let decks = raw.decks.map(ensureDeckRow).filter(Boolean)
+    let decks = ensureDefaultDeckInList(
+      raw.decks.map(ensureDeckRow).filter(Boolean),
+    )
     const snapshots =
       raw.snapshots && typeof raw.snapshots === 'object' ? raw.snapshots : {}
-    let lastActiveDeckId = raw.lastActiveDeckId || null
-    /** 不再在「零卡组」时自动塞入占位卡组，列表页展示真实空状态 */
+    let lastActiveDeckId = raw.lastActiveDeckId || DEFAULT_DECK_ID
     if (lastActiveDeckId && !decks.some((d) => d.id === lastActiveDeckId)) {
-      lastActiveDeckId = decks[0]?.id ?? null
+      lastActiveDeckId = DEFAULT_DECK_ID
     }
-    let lastAddTargetDeckId = raw.lastAddTargetDeckId ?? null
+    let lastAddTargetDeckId = raw.lastAddTargetDeckId ?? DEFAULT_DECK_ID
     if (
       lastAddTargetDeckId &&
       !decks.some((d) => d.id === lastAddTargetDeckId)
     ) {
-      lastAddTargetDeckId = null
+      lastAddTargetDeckId = DEFAULT_DECK_ID
     }
     return { version: 2, snapshots, decks, lastActiveDeckId, lastAddTargetDeckId }
   }
   if (raw && typeof raw === 'object') {
-    return migrateV1ToV2(raw)
+    const migrated = migrateV1ToV2(raw)
+    migrated.decks = ensureDefaultDeckInList(migrated.decks)
+    if (!migrated.lastActiveDeckId) {
+      migrated.lastActiveDeckId = DEFAULT_DECK_ID
+    }
+    if (!migrated.lastAddTargetDeckId) {
+      migrated.lastAddTargetDeckId = DEFAULT_DECK_ID
+    }
+    return migrated
   }
+  const decks = ensureDefaultDeckInList([])
   return {
     version: 2,
     snapshots: {},
-    lastActiveDeckId: null,
-    lastAddTargetDeckId: null,
-    decks: [],
+    lastActiveDeckId: DEFAULT_DECK_ID,
+    lastAddTargetDeckId: DEFAULT_DECK_ID,
+    decks,
   }
 }
 
@@ -325,6 +382,7 @@ const useYgoDatabaseStore = create((set, get) => ({
     } catch (e) {
       const msg = e.message || String(e)
       set({
+        cards: [],
         loading: false,
         apiError: msg,
         apiHasMore: false,
@@ -349,24 +407,36 @@ const useYgoDatabaseStore = create((set, get) => ({
   loadDecks: async () => {
     const electron = typeof window !== 'undefined' ? window.electronAPI : null
     if (!electron?.readYgoDecks) {
-      set({ decksLoaded: true })
+      const decks = ensureDefaultDeckInList(get().decks)
+      set({
+        decks,
+        lastActiveDeckId: get().lastActiveDeckId || DEFAULT_DECK_ID,
+        lastAddTargetDeckId: get().lastAddTargetDeckId || DEFAULT_DECK_ID,
+        decksLoaded: true,
+      })
       return
     }
     const res = await electron.readYgoDecks()
     if (!res.success || !res.data) {
-      set({ decksLoaded: true })
+      const decks = ensureDefaultDeckInList([])
+      set({
+        decks,
+        lastActiveDeckId: DEFAULT_DECK_ID,
+        lastAddTargetDeckId: DEFAULT_DECK_ID,
+        decksLoaded: true,
+      })
       return
     }
     const normalized = normalizeFilePayload(res.data)
     let { decks, lastActiveDeckId, lastAddTargetDeckId, snapshots } = normalized
     if (lastActiveDeckId && !decks.some((d) => d.id === lastActiveDeckId)) {
-      lastActiveDeckId = decks[0]?.id ?? null
+      lastActiveDeckId = DEFAULT_DECK_ID
     }
     if (
       lastAddTargetDeckId &&
       !decks.some((d) => d.id === lastAddTargetDeckId)
     ) {
-      lastAddTargetDeckId = null
+      lastAddTargetDeckId = DEFAULT_DECK_ID
     }
     set({
       decks,
@@ -412,6 +482,9 @@ const useYgoDatabaseStore = create((set, get) => ({
   },
 
   deleteDeck: (deckId) => {
+    if (isDefaultDeckId(deckId)) {
+      return { ok: false, reason: '默认卡组不可删除' }
+    }
     const decks = get().decks.filter((d) => d.id !== deckId)
     let lastActiveDeckId = get().lastActiveDeckId
     if (lastActiveDeckId === deckId) {
@@ -424,6 +497,7 @@ const useYgoDatabaseStore = create((set, get) => ({
     const cardSnapshots = pruneSnapshotsForDecks(decks, get().cardSnapshots)
     set({ decks, lastActiveDeckId, lastAddTargetDeckId, cardSnapshots })
     void get().persistAllDecks()
+    return { ok: true }
   },
 
   /** 置顶 / 取消置顶（持久化） */
@@ -469,6 +543,9 @@ const useYgoDatabaseStore = create((set, get) => ({
    * @returns {{ ok: boolean, reason?: string }}
    */
   setDeckNameValidated: (deckId, rawName) => {
+    if (isDefaultDeckId(deckId)) {
+      return { ok: false, reason: '默认卡组不可重命名' }
+    }
     const name = String(rawName ?? '').trim()
     if (!name) return { ok: false, reason: '卡组名称不能为空' }
     const decks = get().decks
@@ -670,6 +747,48 @@ const useYgoDatabaseStore = create((set, get) => ({
     const snaps = pruneSnapshotsForDecks(decks, get().cardSnapshots)
     set({ decks, cardSnapshots: snaps })
     void get().persistAllDecks()
+  },
+
+  /** @param {'main'|'extra'|'side'} zone */
+  clearDeckZone: (deckId, zone) => {
+    if (zone !== 'main' && zone !== 'extra' && zone !== 'side') return
+    const now = new Date().toISOString()
+    const decks = get().decks.map((d) =>
+      d.id === deckId ? { ...d, [zone]: [], updatedAt: now } : d,
+    )
+    const snaps = pruneSnapshotsForDecks(decks, get().cardSnapshots)
+    set({ decks, cardSnapshots: snaps })
+    void get().persistAllDecks()
+  },
+
+  /** @returns {{ ok: boolean, deckId?: string, reason?: string }} */
+  duplicateDeck: (deckId) => {
+    const decks = get().decks
+    const src = decks.find((d) => d.id === deckId)
+    if (!src) return { ok: false, reason: '卡组不存在' }
+    const name = nextDeckCopyName(src.name, decks)
+    const id = genDeckId()
+    const now = new Date().toISOString()
+    const cloneZone = (arr) =>
+      (arr || []).map((e) => ({ id: e.id, n: e.n }))
+    const deck = {
+      id,
+      name,
+      description: src.description ?? '',
+      notes: src.notes ?? '',
+      createdAt: now,
+      updatedAt: now,
+      pinned: false,
+      main: cloneZone(src.main),
+      extra: cloneZone(src.extra),
+      side: cloneZone(src.side),
+    }
+    set((s) => ({
+      decks: [...s.decks, deck],
+      lastActiveDeckId: id,
+    }))
+    void get().persistAllDecks()
+    return { ok: true, deckId: id }
   },
 
   cardById: (id) => {

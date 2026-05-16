@@ -1,7 +1,4 @@
 .card-detail-page {
-  width: 100%;
-  max-width: min(960px, 100%);
-  margin: 0 auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

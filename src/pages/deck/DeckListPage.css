@@ -1,12 +1,79 @@
 .deck-list-page {
-  width: 100%;
-  max-width: min(1100px, 100%);
-  margin: 0 auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   min-height: 0;
   flex: 1 1 auto;
+  gap: var(--spacing-md);
+}
+
+.deck-list-page-header .ygo-page-lead {
+  max-width: none;
+  width: 100%;
+}
+
+.deck-list-toolbar {
+  --deck-toolbar-control-height: var(--control-height-sm, 32px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm) var(--spacing-md);
+  width: 100%;
+}
+
+.deck-list-search {
+  flex: 1 1 8rem;
+  min-width: min(100%, 160px);
+  max-width: min(100%, 24rem);
+}
+
+.deck-list-search > div {
+  width: 100%;
+}
+
+.deck-list-search .ant-input-affix-wrapper {
+  height: var(--deck-toolbar-control-height);
+  min-height: var(--deck-toolbar-control-height);
+  max-height: var(--deck-toolbar-control-height);
+  align-items: center;
+  padding-block: 0;
+}
+
+.deck-list-search .ant-input {
+  font-size: var(--font-size-sm);
+}
+
+.deck-list-toolbar-actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+  align-items: center;
+}
+
+.deck-list-toolbar-actions .deck-list-toolbar-btn.ant-btn,
+.deck-list-sort-trigger.ant-btn {
+  height: var(--deck-toolbar-control-height) !important;
+  min-height: var(--deck-toolbar-control-height) !important;
+  max-height: var(--deck-toolbar-control-height) !important;
+  padding-block: 0 !important;
+  padding-inline: var(--spacing-sm) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  line-height: 1;
+  font-size: var(--font-size-sm);
+}
+
+.deck-list-sort-trigger.ant-btn {
+  gap: var(--spacing-xs);
+}
+
+.deck-list-empty-hint {
+  margin: var(--spacing-lg) 0;
+  font-size: var(--font-size-sm);
+  color: var(--lobe-color-text-3, var(--color-text-secondary));
+  text-align: center;
 }
 
 .deck-list-loading {
@@ -14,82 +81,16 @@
   align-items: center;
   justify-content: center;
   min-height: 240px;
-}
-
-.deck-list-page .page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-}
-
-.deck-list-title {
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.deck-list-title-icon {
-  flex-shrink: 0;
-}
-
-.deck-list-lead {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: 1.55;
-  max-width: 560px;
-}
-
-.deck-list-empty-state {
   flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
-  min-height: min(420px, calc(100vh - 220px));
-  padding: var(--spacing-xxl) var(--spacing-lg);
-  margin-top: var(--spacing-lg);
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.deck-list-empty-icon-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 112px;
-  height: 112px;
-  margin-bottom: var(--spacing-xs);
-}
-
-.deck-list-empty-icon {
-  width: 56px;
-  height: 56px;
-}
-
-.deck-list-empty-title {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-}
-
-.deck-list-empty-hint {
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  line-height: 1.55;
-  max-width: 320px;
 }
 
 .deck-shelf-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: var(--spacing-md);
+  flex: 1 1 auto;
+  align-content: start;
+  padding-bottom: var(--spacing-md);
 }
 
 .deck-shelf-dropdown-trigger {
@@ -107,6 +108,16 @@
   text-align: left;
   display: block;
   width: 100%;
+  border-radius: var(--radius-md);
+  transition: transform 0.2s ease;
+}
+
+.deck-shelf-card:hover {
+  transform: translateY(-2px);
+}
+
+.deck-shelf-card--default .deck-shelf-cover-wrap {
+  border-color: color-mix(in srgb, var(--lobe-color-primary) 35%, var(--color-border));
 }
 
 .deck-shelf-cover-wrap {
@@ -114,6 +125,9 @@
   width: 100%;
   aspect-ratio: 59 / 86;
   overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  background: color-mix(in srgb, var(--lobe-color-fill-secondary, #888) 8%, transparent);
 }
 
 .deck-shelf-pin-badge {
@@ -137,15 +151,21 @@
   display: block;
 }
 
-.deck-shelf-empty {
+.deck-shelf-placeholder {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
+  color: var(--lobe-color-text-4, color-mix(in srgb, var(--lobe-color-text-3, #888) 55%, transparent));
+}
+
+.deck-shelf-placeholder--default {
+  letter-spacing: 0.2em;
+  color: var(--lobe-color-text-4, color-mix(in srgb, var(--lobe-color-text-3, #888) 55%, transparent));
 }
 
 .deck-shelf-caption {
@@ -154,18 +174,29 @@
   right: 0;
   bottom: 0;
   z-index: 1;
-  padding: var(--spacing-sm) var(--spacing-xs);
+  min-height: 2.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md) var(--spacing-sm);
   text-align: center;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .deck-shelf-name {
   display: block;
   font-size: var(--font-size-sm);
-  font-weight: 600;
-  line-height: 1.35;
+  font-weight: 400;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .deck-shelf-grid {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: var(--spacing-sm);
+  }
 }

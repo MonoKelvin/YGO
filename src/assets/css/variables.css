@@ -57,6 +57,13 @@
 
   --control-height-sm: 32px;
   --control-height-md: 40px;
+  /** 页头副标题浅灰（不依赖运行时 token 是否已注入） */
+  --ygo-text-lead: rgba(0, 0, 0, 0.45);
+  /** 卡牌列表等滚动表格表面：浅色白底、深色抬升灰（非纯黑） */
+  --ygo-list-surface-bg: #ffffff;
+  --ygo-list-surface-bg-solid: #ffffff;
+  --ygo-form-fill-bg: var(--ygo-list-surface-bg);
+  --ygo-table-header-scroll-shadow: inset 0 -10px 14px -12px rgba(0, 0, 0, 0.05);
   --control-gap-sm: 10px;
   --control-textarea-min-height: 120px;
 
@@ -89,6 +96,8 @@
 }
 
 [data-theme='dark'] {
+  --ygo-tooltip-border: rgba(255, 255, 255, 0.12);
+  --ygo-tooltip-text: rgba(255, 255, 255, 0.72);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
@@ -120,6 +129,26 @@
   --lobe-color-bg-layout: rgba(12, 13, 15, 0.98);
   --lobe-color-bg-container: rgba(22, 24, 28, 0.96);
   --lobe-color-bg-elevated: rgba(30, 33, 38, 0.95);
+  --ygo-text-lead: rgba(255, 255, 255, 0.52);
+  /** 列表区：比容器色更暗、带透明度，与页面弥散底融合 */
+  --ygo-list-surface-bg: rgba(12, 14, 18, 0.62);
+  --ygo-list-surface-bg-solid: rgba(16, 18, 22, 0.88);
+  --ygo-form-fill-bg: var(--ygo-list-surface-bg);
+  --ygo-table-header-scroll-shadow: inset 0 -12px 16px -10px rgba(0, 0, 0, 0.16);
+}
+
+[data-theme='light'] {
+  --ygo-tooltip-border: rgba(0, 0, 0, 0.06);
+  --ygo-tooltip-text: rgba(0, 0, 0, 0.65);
+  --ygo-text-lead: rgba(0, 0, 0, 0.45);
+  --ygo-list-surface-bg: #ffffff;
+  --ygo-list-surface-bg-solid: #ffffff;
+  --ygo-form-fill-bg: var(--ygo-list-surface-bg);
+  --ygo-table-header-scroll-shadow: inset 0 -10px 14px -12px rgba(0, 0, 0, 0.05);
+  --color-bg-container: rgba(255, 255, 255, 0.92);
+  --color-bg-elevated: #ffffff;
+  --lobe-color-bg-container: rgba(255, 255, 255, 0.92);
+  --lobe-color-bg-elevated: #ffffff;
 }
 
 /** 浅色：与 token 基色一致，避免默认死白 */
@@ -134,10 +163,18 @@
   background-color: var(--ygo-app-bg-base);
 }
 
+/**
+ * 勿对 * 使用 padding:0，否则会覆盖挂到 body / 浮层宿主上的 Lobe Tooltip 等组件内边距。
+ * 块级间距由各页面与 @lobehub/ui 组件自行控制。
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 * {
   margin: 0;
-  padding: 0;
-  box-sizing: border-box;
 }
 
 html, body, #root {
@@ -177,14 +214,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.page-title {
+/** 独立使用时的装饰标题；页头内请用 .ygo-page-title */
+.page-title:not(.ygo-page-title) {
   position: relative;
   font-family: var(--font-display);
-  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  font-size: clamp(1.125rem, 1.6vw + 0.5rem, var(--font-size-xl));
   font-weight: 600;
-  letter-spacing: 0.06em;
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-md);
+  letter-spacing: 0.04em;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
 }
 
 .section-title {

@@ -1,0 +1,15 @@
+/** 子路由占满「我的卡组」页高度，列表/详情可正确使用 flex 布局 */
+.deck-routes-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.deck-routes-shell > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}

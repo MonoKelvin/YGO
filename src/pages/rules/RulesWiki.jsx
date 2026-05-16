@@ -6,7 +6,8 @@ import {
     useState,
     useCallback,
 } from 'react'
-import { ScrollArea, Button } from '@lobehub/ui'
+import { ScrollArea, Button, DraggablePanel } from '@lobehub/ui'
+import PageHeader from '../../components/layout/PageHeader'
 import { ChevronUp, BookOpen } from 'lucide-react'
 import {
     MarkdownPart,
@@ -344,19 +345,13 @@ export default function RulesWiki() {
     }
 
     return (
-        <div className="rules-wiki-page">
-            <header className="rules-wiki-header">
-                <div className="rules-wiki-header-content">
-                    <div className="rules-wiki-title-row">
-                        <BookOpen className="rules-wiki-title-icon" size={24} />
-                        <h1 className="rules-wiki-title">规则百科</h1>
-                    </div>
-                    <p className="rules-wiki-lead">
-                        开篇为「百科引言」（世界观、维基与官网、动画赛事与数据库外链）；其后为打牌规则，由浅入深。细则以
-                        Konami 与数据库为准。
-                    </p>
-                </div>
-            </header>
+        <div className="rules-wiki-page ygo-page-shell ygo-page-shell--wide">
+            <PageHeader
+                className="rules-wiki-header"
+                title="规则百科"
+                icon={BookOpen}
+                lead="开篇为「百科引言」（世界观、维基与官网、动画赛事与数据库外链）；其后为打牌规则，由浅入深。细则以 Konami 与数据库为准。"
+            />
 
             <div className="rules-wiki-layout">
                 <main className="rules-wiki-main" role="main">
@@ -401,18 +396,31 @@ export default function RulesWiki() {
                     </ScrollArea>
                 </main>
 
-                <SidebarPanel
-                    sections={sections}
-                    activeId={activeId}
-                    expandedSections={expandedSections}
-                    onToggleSection={toggleSectionExpand}
-                    onExpandSection={expandSection}
-                    onScrollToId={scrollContentToId}
-                    tocNavRef={tocNavRef}
-                    onOpenPdf={handleOpenPdf}
-                    onOpenDocsFolder={handleOpenDocsFolder}
-                    hasElectron={!!electron?.getResourcePath}
-                />
+                <DraggablePanel
+                    className="rules-wiki-draggable-panel"
+                    placement="right"
+                    pin
+                    expandable
+                    defaultExpand
+                    defaultSize={{ width: 280 }}
+                    minWidth={200}
+                    maxWidth={400}
+                    showBorder
+                    backgroundColor="var(--color-bg-elevated)"
+                >
+                    <SidebarPanel
+                        sections={sections}
+                        activeId={activeId}
+                        expandedSections={expandedSections}
+                        onToggleSection={toggleSectionExpand}
+                        onExpandSection={expandSection}
+                        onScrollToId={scrollContentToId}
+                        tocNavRef={tocNavRef}
+                        onOpenPdf={handleOpenPdf}
+                        onOpenDocsFolder={handleOpenDocsFolder}
+                        hasElectron={!!electron?.getResourcePath}
+                    />
+                </DraggablePanel>
             </div>
         </div>
     )

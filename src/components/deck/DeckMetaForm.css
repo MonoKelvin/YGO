@@ -1,0 +1,63 @@
+/** 卡组信息 Form：控件列撑满剩余宽度 */
+.deck-meta-form .ant-form-item-label {
+  flex: 0 0 auto !important;
+}
+
+.deck-meta-form .ant-form-item-control {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.deck-meta-form .ant-form-item-control-input-content {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.deck-meta-form .ant-form-item-control-input-content > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.deck-meta-form .ant-form-item-control-input-content textarea.ant-input {
+  width: 100%;
+  max-width: 100%;
+}
+
+.deck-meta-form .ant-form-item-row:has(textarea) {
+  align-items: flex-start;
+}
+
+.deck-meta-form .deck-meta-form-item--name .ant-form-item-control-input-content {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.deck-meta-form .deck-meta-form-item--name .ant-form-item-control-input-content > * {
+  width: auto;
+  max-width: 100%;
+}
+
+.deck-meta-form .deck-meta-name-input {
+  width: min(100%, 40rem);
+  max-width: 40rem;
+}
+
+.deck-meta-form .deck-meta-form-item--time .ant-form-item-control-input-content {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.deck-meta-form .deck-meta-form-item--time .ant-form-item-control-input-content > * {
+  width: auto;
+  max-width: 100%;
+}
+
+.deck-meta-form .deck-meta-time-value {
+  display: block;
+  width: 100%;
+  text-align: right;
+}

@@ -2,8 +2,6 @@
  * 卡牌生成：仅左侧参数区滚动；Form 控件列对齐；预览栏宽度与留白。
  */
 .card-generator {
-  width: 100%;
-  max-width: 100%;
   overflow: hidden;
   box-sizing: border-box;
 }

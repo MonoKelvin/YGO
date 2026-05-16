@@ -14,8 +14,6 @@ import CardGenerator from './pages/card-generator/CardGenerator'
 import CardBrowser from './pages/card-browser/CardBrowser'
 import LibraryRoutes from './pages/card-library/LibraryRoutes'
 import DeckRoutes from './pages/deck/DeckRoutes'
-import DeckListPage from './pages/deck/DeckListPage'
-import DeckDetailPage from './pages/deck/DeckDetailPage'
 import Settings from './pages/settings/Settings'
 import Layout from './components/layout/Layout'
 import RouteErrorBoundary from './components/common/RouteErrorBoundary'
@@ -149,6 +147,7 @@ function PageCache() {
                     top: 0,
                     left: 0,
                     width: '100%',
+                    height: '100%',
                     minHeight: '100%',
                 }}
             >
@@ -271,6 +270,10 @@ function AppContent() {
                                     })
                                     useCardStore.getState().loadCards(rows)
                                 }
+                            }
+
+                            if (electron.readYgoDecks) {
+                                await useYgoDatabaseStore.getState().loadDecks()
                             }
                         })(),
                         new Promise((_, reject) =>

@@ -12,6 +12,7 @@ import {
     DEFAULT_LIBRARY_PAGE_SIZE,
     normalizeLibraryPageSize,
 } from '../../config/librarySettings'
+import PageHeader from '../../components/layout/PageHeader'
 import {
     AppearanceSection,
     GeneralSection,
@@ -176,13 +177,8 @@ export default function Settings() {
     ]
 
     return (
-        <div className="settings-page">
-            <div className="settings-header">
-                <h1 className="page-title">
-                    <SlidersHorizontal size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-                    设置
-                </h1>
-            </div>
+        <div className="settings-page ygo-page-shell ygo-page-shell--narrow">
+            <PageHeader title="设置" icon={SlidersHorizontal} />
             <Form
                 items={items}
                 collapsible

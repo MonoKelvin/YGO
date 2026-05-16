@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Button, Dropdown, Flexbox, Menu, ScrollArea, SearchBar, Text, toast } from '@lobehub/ui'
+import { useCallback, useMemo } from 'react'
+import { Button, Dropdown, Flexbox, Menu, ScrollArea, Text, toast } from '@lobehub/ui'
+import PageHeader from '../../components/layout/PageHeader'
 import { Edit3, FolderOpen, Images, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import useCardStore from '../../store/useStore'
@@ -18,18 +19,7 @@ export default function CardBrowser() {
   const cards = useCardStore((s) => s.cards)
   const deleteCard = useCardStore((s) => s.deleteCard)
   const loadCardIntoGenerator = useCardStore((s) => s.loadCardIntoGenerator)
-  const [searchTerm, setSearchTerm] = useState('')
-
-  const filteredCards = useMemo(
-    () =>
-      cards.filter(
-        (card) =>
-          card.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          card.race?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          card.effect?.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    [cards, searchTerm],
-  )
+  const filteredCards = useMemo(() => cards, [cards])
 
   const loadToEditor = useCallback(
     (card) => {
@@ -105,42 +95,20 @@ export default function CardBrowser() {
     [confirmDelete, loadToEditor],
   )
 
-  const countLabel =
-    filteredCards.length === cards.length
-      ? `共 ${cards.length} 张`
-      : `显示 ${filteredCards.length} / ${cards.length} 张`
+  const countLabel = `共 ${cards.length} 张`
 
   return (
-    <Flexbox className="card-browser" vertical flex={1} style={{ minHeight: 0 }}>
-      <header className="card-browser-header">
-        <Flexbox
-          horizontal
-          align="flex-end"
-          justify="space-between"
-          wrap="wrap"
-          gap={16}
-          className="card-browser-header-row"
-        >
-          <Flexbox vertical gap={6} flex={1} style={{ minWidth: 200 }}>
-            <h1 className="page-title card-browser-title">
-              <Images size={22} className="card-browser-title-icon" aria-hidden />
-              卡牌浏览
-            </h1>
-            <Text type="secondary" className="card-browser-lead">
-              {countLabel} · 右键卡牌载入编辑、打开图片或删除
-            </Text>
-          </Flexbox>
-          <div className="card-browser-search">
-            <SearchBar
-              variant="outlined"
-              value={searchTerm}
-              onInputChange={setSearchTerm}
-              placeholder="搜索名称、种族或效果…"
-              allowClear
-            />
-          </div>
-        </Flexbox>
-      </header>
+    <Flexbox
+      className="card-browser ygo-page-shell"
+      vertical
+      flex={1}
+      style={{ minHeight: 0 }}
+    >
+      <PageHeader
+        title="卡牌浏览"
+        icon={Images}
+        lead={`${countLabel} · 右键卡牌载入编辑、打开图片或删除`}
+      />
 
       <ScrollArea className="card-browser-scroll">
         <div className="card-browser-scroll-inner">
@@ -156,12 +124,10 @@ export default function CardBrowser() {
                 <Images className="card-browser-empty-icon" strokeWidth={1.15} />
               </div>
               <Text strong className="card-browser-empty-title">
-                {cards.length === 0 ? '暂无卡牌' : '无匹配结果'}
+                暂无卡牌
               </Text>
               <Text type="secondary" className="card-browser-empty-hint">
-                {cards.length === 0
-                  ? '在卡牌生成器中保存后，会出现在这里'
-                  : '尝试更换关键词或清空搜索'}
+                在卡牌生成器中保存后，会出现在这里
               </Text>
               {cards.length === 0 ? (
                 <Button variant="outlined" type="primary" onClick={() => navigate('/')}>
@@ -186,7 +152,6 @@ export default function CardBrowser() {
                       <button
                         type="button"
                         className="card-browser-tile"
-                        title={`${card.name || '未命名'} · 右键菜单`}
                       >
                         <CardBrowserThumb card={card} />
                         <div className="card-browser-tile-foot">

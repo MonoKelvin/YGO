@@ -124,8 +124,10 @@ export default function LayoutComponent({ children }) {
                   filter: 'none',
                 },
               }}
-              header={() => (
-                <div className="app-logo-row">
+              header={(expand) => (
+                <div
+                  className={`app-logo-row${expand ? '' : ' app-logo-row--collapsed'}`}
+                >
                   <span className="logo-text">YGO</span>
                 </div>
               )}

@@ -1,30 +1,42 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import { Flexbox, Tag, Text, toast, Button, Input, TextArea } from '@lobehub/ui'
+import { Flexbox, Text, toast, Button, Form } from '@lobehub/ui'
 import { openConfirmModal } from '../../utils/openConfirmModal'
-import { Trash2 } from 'lucide-react'
+import { Layers, Sparkles, PanelRight, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import {
+  DEFAULT_DECK_NAME,
+  isDefaultDeckId,
+} from '../../config/deckConstants'
 import useYgoDatabaseStore from '../../store/useYgoDatabaseStore'
 import useCardStore from '../../store/useStore'
 import { persistUserSettingsToDisk } from '../../utils/persistUserSettings'
-import DeckZoneTiles, {
-  flattenDeckInstances,
-  parseSelectionKey,
-} from './DeckZoneTiles'
+import DeckMetaForm from './DeckMetaForm'
+import DeckZoneList from './DeckZoneList'
+import { flattenDeckInstances, parseSelectionKey } from './DeckZoneTiles'
 import './DeckDetailEditor.css'
 
-function fmtTs(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
+const ZONE_LABELS = {
+  main: '主卡组',
+  extra: '额外卡组',
+  side: '副卡组',
+}
+
+/** 分区标题右侧：清空该分区卡牌 */
+function ZoneClearExtra({ label, onClear }) {
+  return (
+    <Button
+      variant="outlined"
+      type="text"
+      size="small"
+      icon={<Trash2 size={16} />}
+      title={label}
+      aria-label={label}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClear()
+      }}
+    />
+  )
 }
 
 export default function DeckDetailEditor({ deckId }) {
@@ -33,7 +45,7 @@ export default function DeckDetailEditor({ deckId }) {
   const updateDeckMeta = useYgoDatabaseStore((s) => s.updateDeckMeta)
   const setDeckNameValidated = useYgoDatabaseStore((s) => s.setDeckNameValidated)
   const removeOneFromDeck = useYgoDatabaseStore((s) => s.removeOneFromDeck)
-  const clearDeckZones = useYgoDatabaseStore((s) => s.clearDeckZones)
+  const clearDeckZone = useYgoDatabaseStore((s) => s.clearDeckZone)
   const shiftMainSide = useYgoDatabaseStore((s) => s.shiftMainSide)
   const cardById = useYgoDatabaseStore((s) => s.cardById)
 
@@ -104,7 +116,28 @@ export default function DeckDetailEditor({ deckId }) {
     })
   }, [selection, deckId, removeOneFromDeck])
 
+  const confirmClearZone = useCallback(
+    (zone) => {
+      const zoneLabel = ZONE_LABELS[zone] || zone
+      openConfirmModal({
+        title: `清空${zoneLabel}？`,
+        content: '该分区内的卡牌将被全部移除。',
+        okText: '清空',
+        cancelText: '取消',
+        okButtonProps: { danger: true },
+        onOk: () => {
+          clearDeckZone(deckId, zone)
+          setSelection(new Set())
+          toast.success(`已清空${zoneLabel}`)
+        },
+      })
+    },
+    [deckId, clearDeckZone],
+  )
+
   if (!deck) return null
+
+  const isDefault = isDefaultDeckId(deckId)
 
   const main = deck.main || []
   const extra = deck.extra || []
@@ -124,6 +157,10 @@ export default function DeckDetailEditor({ deckId }) {
   }
 
   const flushName = () => {
+    if (isDefault) {
+      setNameDraft(DEFAULT_DECK_NAME)
+      return
+    }
     const trimmed = nameDraft.trim()
     if (trimmed === deck.name) return
     const r = setDeckNameValidated(deckId, trimmed)
@@ -133,82 +170,101 @@ export default function DeckDetailEditor({ deckId }) {
     }
   }
 
-  const confirmClear = () => {
-    openConfirmModal({
-      title: '清空该卡组所有卡牌？',
-      content: ' ',
-      okText: '清空',
-      cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => clearDeckZones(deckId),
-    })
+  const zoneListProps = {
+    deckId,
+    cardById,
+    favoriteSet,
+    onToggleFavorite,
+    onOpenDetail,
+    removeOneFromDeck,
+    selection,
+    onToggleSelect,
   }
+
+  const zoneFormItems = [
+    {
+      key: 'main',
+      icon: Layers,
+      title: `主卡组 · ${mainTotal}/60 · ${mainInstances} 张`,
+      extra: (
+        <ZoneClearExtra
+          label="清空主卡组"
+          onClear={() => confirmClearZone('main')}
+        />
+      ),
+      children: (
+        <DeckZoneList
+          zone="main"
+          entries={main}
+          shiftMainSide={shiftMainSide}
+          {...zoneListProps}
+        />
+      ),
+    },
+    {
+      key: 'extra',
+      icon: Sparkles,
+      title: `额外卡组 · ${extraTotal}/15 · ${extraInstances} 张`,
+      extra: (
+        <ZoneClearExtra
+          label="清空额外卡组"
+          onClear={() => confirmClearZone('extra')}
+        />
+      ),
+      children: (
+        <DeckZoneList zone="extra" entries={extra} {...zoneListProps} />
+      ),
+    },
+    {
+      key: 'side',
+      icon: PanelRight,
+      title: `副卡组 · ${sideTotal}/15 · ${sideInstances} 张`,
+      desc: '从主卡组右键「移入副卡组」或原列表操作移入；在此右键移回主卡组。数据库加入的牌默认进主/额外。',
+      extra: (
+        <ZoneClearExtra
+          label="清空副卡组"
+          onClear={() => confirmClearZone('side')}
+        />
+      ),
+      children: (
+        <DeckZoneList
+          zone="side"
+          entries={side}
+          shiftMainSide={shiftMainSide}
+          {...zoneListProps}
+        />
+      ),
+    },
+  ]
 
   return (
     <div className="deck-detail-editor">
-      <section className="deck-meta-card">
-        <h4 className="deck-meta-heading">卡组信息</h4>
-        <div className="deck-meta-grid">
-          <label className="deck-meta-label">
-            名称
-            <Input
-              variant="outlined"
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              onBlur={flushName}
-              onPressEnter={flushName}
-              placeholder="卡组名称（不可与其他卡组重复）"
-              maxLength={80}
-            />
-          </label>
-          <label className="deck-meta-label">
-            简介
-            <TextArea
-              variant="outlined"
-              value={deck.description}
-              onChange={(e) =>
-                handleMeta({ description: e.target.value })
-              }
-              placeholder="一句话介绍这套卡组"
-              autoSize={{ minRows: 2, maxRows: 6 }}
-              maxLength={500}
-              showCount
-            />
-          </label>
-          <label className="deck-meta-label">
-            备注
-            <TextArea
-              variant="outlined"
-              value={deck.notes}
-              onChange={(e) => handleMeta({ notes: e.target.value })}
-              placeholder="自用备忘、比赛记录等"
-              autoSize={{ minRows: 2, maxRows: 8 }}
-              maxLength={2000}
-              showCount
-            />
-          </label>
-          <div className="deck-meta-readonly">
-            <span className="deck-meta-label-text">创建时间</span>
-            <Text type="secondary">{fmtTs(deck.createdAt)}</Text>
-          </div>
-          <div className="deck-meta-readonly">
-            <span className="deck-meta-label-text">修改时间</span>
-            <Text type="secondary">
-              {fmtTs(deck.updatedAt)}（保存卡组时自动更新）
-            </Text>
-          </div>
-        </div>
+      <section className="deck-detail-section deck-meta-section">
+        <DeckMetaForm
+          name={isDefault ? DEFAULT_DECK_NAME : nameDraft}
+          onNameChange={setNameDraft}
+          onNameBlur={flushName}
+          onNamePressEnter={flushName}
+          description={deck.description}
+          onDescriptionChange={(v) => handleMeta({ description: v })}
+          notes={deck.notes}
+          onNotesChange={(v) => handleMeta({ notes: v })}
+          showTimestamps
+          createdAt={deck.createdAt}
+          updatedAt={deck.updatedAt}
+          readOnlyName={isDefault}
+          nameDesc={isDefault ? '默认卡组名称不可修改' : undefined}
+        />
       </section>
 
-      <section className="deck-zones-section">
-        <h4 className="deck-zones-heading">卡组构成</h4>
-        <p className="deck-zone-hint-keys">
-          规则：主卡组最多 60 张、额外 15、副卡组 15；同名卡在主卡组与副卡组合计最多 3 张（额外卡组内同名亦最多
-          3 张）。点击卡图打开详情；Ctrl+点击多选；右键快捷操作。
-        </p>
+      <section className="deck-detail-section deck-zones-section">
+        <Text type="secondary" className="deck-zone-hint-keys">
+          规则：主卡组最多 60 张、额外 15、副卡组 15；同名卡在主卡组与副卡组合计最多 3
+          张（额外卡组内同名亦最多 3 张）。点击卡图打开详情；Ctrl+点击多选；右键快捷操作。
+        </Text>
 
-        {selection.size > 0 && (
-          <div className="deck-batch-bar">
+        {selection.size > 0 ? (
+          <div className="deck-batch-bar" role="status">
             <Text>
               已选 <strong>{selection.size}</strong> 张
             </Text>
@@ -216,84 +272,23 @@ export default function DeckDetailEditor({ deckId }) {
               <Button variant="outlined" danger onClick={confirmBatchRemove}>
                 删除所选
               </Button>
-              <Button variant="outlined" type="link" onClick={() => setSelection(new Set())}>
+              <Button
+                variant="outlined"
+                type="link"
+                onClick={() => setSelection(new Set())}
+              >
                 取消选择
               </Button>
             </Flexbox>
           </div>
-        )}
+        ) : null}
 
-        <div className="deck-zone">
-          <div className="deck-zone-title">
-            主卡组{' '}
-            <Tag>
-              {mainTotal}/60 · {mainInstances} 张
-            </Tag>
-          </div>
-          <DeckZoneTiles
-            zone="main"
-            entries={main}
-            deckId={deckId}
-            cardById={cardById}
-            favoriteSet={favoriteSet}
-            onToggleFavorite={onToggleFavorite}
-            onOpenDetail={onOpenDetail}
-            removeOneFromDeck={removeOneFromDeck}
-            shiftMainSide={shiftMainSide}
-            selection={selection}
-            onToggleSelect={onToggleSelect}
-          />
-        </div>
-
-        <div className="deck-zone">
-          <div className="deck-zone-title">
-            额外卡组{' '}
-            <Tag>
-              {extraTotal}/15 · {extraInstances} 张
-            </Tag>
-          </div>
-          <DeckZoneTiles
-            zone="extra"
-            entries={extra}
-            deckId={deckId}
-            cardById={cardById}
-            favoriteSet={favoriteSet}
-            onToggleFavorite={onToggleFavorite}
-            onOpenDetail={onOpenDetail}
-            removeOneFromDeck={removeOneFromDeck}
-            selection={selection}
-            onToggleSelect={onToggleSelect}
-          />
-        </div>
-
-        <div className="deck-zone">
-          <div className="deck-zone-title">
-            副卡组（Side）{' '}
-            <Tag>
-              {sideTotal}/15 · {sideInstances} 张
-            </Tag>
-          </div>
-          <p className="deck-zone-hint">
-            从主卡组右键「移入副卡组」或原列表操作移入；在此右键移回主卡组。数据库加入的牌默认进主/额外。
-          </p>
-          <DeckZoneTiles
-            zone="side"
-            entries={side}
-            deckId={deckId}
-            cardById={cardById}
-            favoriteSet={favoriteSet}
-            onToggleFavorite={onToggleFavorite}
-            onOpenDetail={onOpenDetail}
-            removeOneFromDeck={removeOneFromDeck}
-            shiftMainSide={shiftMainSide}
-            selection={selection}
-            onToggleSelect={onToggleSelect}
-          />
-        </div>
-
-        <Button variant="outlined" danger icon={<Trash2 size={16} />} onClick={confirmClear} block>
-          清空该卡组全部卡牌
-        </Button>
+        <Form
+          className="deck-zones-form"
+          items={zoneFormItems}
+          variant="outlined"
+          collapsible
+        />
       </section>
     </div>
   )

@@ -156,7 +156,7 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--spacing-xl) + 4px) calc(var(--spacing-xl) + 6px);
+  padding: var(--ygo-page-gutter, var(--spacing-xl));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
@@ -185,6 +185,12 @@
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.08em;
+  transition: font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-logo-row--collapsed .logo-text {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
 }
 
 .app-route-suspense {
@@ -214,15 +220,16 @@
 }
 
 .page-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--ygo-page-header-gap, var(--spacing-lg));
 }
 
 .page-title {
-  font-size: var(--font-size-xl);
+  font-size: clamp(1.125rem, 1.6vw + 0.5rem, var(--font-size-xl));
   font-weight: 600;
   margin: 0;
   display: flex;
   align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .page-description {

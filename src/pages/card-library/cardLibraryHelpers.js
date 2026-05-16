@@ -1,6 +1,10 @@
 import { toast } from '@lobehub/ui'
 
 import {
+  isDefaultDeckId,
+  isDeckVisibleInList,
+} from '../../config/deckConstants'
+import {
   getCardImageUrl,
   getCardImageUrlLarge,
 } from '../../config/ygoCardUtils'
@@ -15,10 +19,33 @@ export function bufferToBase64(buffer) {
   return btoa(binary)
 }
 
-/** 上次加入的卡组置顶，其余按置顶与时间排序（与卡组列表一致） */
+/** 将 YGOProDeck API 英文错误转为简短中文提示（用于 Toast） */
+export function formatYgoApiErrorMessage(message) {
+  const raw = String(message || '').trim()
+  if (!raw) return '查询失败'
+  if (/no card matching your query/i.test(raw)) {
+    return '未找到符合条件的卡牌，请调整搜索关键词或筛选条件'
+  }
+  if (/api-guide/i.test(raw) && /syntax/i.test(raw)) {
+    return '搜索语法无效，请参考 YGOProDeck API 文档'
+  }
+  return raw
+}
+
+/** 在线查询失败时用 Toast 提示 */
+export function notifyYgoApiError(message) {
+  toast.warning(formatYgoApiErrorMessage(message))
+}
+
+/**
+ * 加入卡组弹窗列表排序：默认卡组置顶 → 置顶标记 → 更新时间；
+ * 再将「上次加入目标」提到非默认区的最前，便于快速复选。
+ */
 export function sortDecksForAddPicker(decks, lastAddTargetDeckId) {
-  const list = [...decks]
+  const list = decks.filter(isDeckVisibleInList)
   list.sort((a, b) => {
+    if (isDefaultDeckId(a.id)) return -1
+    if (isDefaultDeckId(b.id)) return 1
     const ap = Boolean(a.pinned)
     const bp = Boolean(b.pinned)
     if (ap !== bp) return ap ? -1 : 1

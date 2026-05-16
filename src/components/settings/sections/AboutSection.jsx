@@ -1,8 +1,9 @@
-import { ExternalLink as ExternalLinkIcon, Info } from 'lucide-react'
+import { ExternalLink as ExternalLinkIcon } from 'lucide-react'
 import ExternalLink from '../../common/ExternalLink'
 import {
     APP_DESCRIPTION,
     APP_NAME,
+    APP_REPOSITORY_URL,
     APP_TAGLINE,
     APP_VERSION,
     IS_DEV_BUILD,
@@ -28,6 +29,16 @@ export default function AboutSection() {
                         </span>
                     </div>
                     <p className="about-tagline">{APP_TAGLINE}</p>
+                    <p className="about-repo">
+                        源码仓库：{' '}
+                        <ExternalLink
+                            href={APP_REPOSITORY_URL}
+                            className="about-link settings-about-link"
+                        >
+                            {APP_REPOSITORY_URL.replace(/^https?:\/\//, '')}
+                            <ExternalLinkIcon size={12} aria-hidden />
+                        </ExternalLink>
+                    </p>
                     <p className="about-desc">{APP_DESCRIPTION}</p>
                     <div className="about-ai-tools">
                         <div className="about-ai-tools-title">主要使用的 AI 工具</div>
@@ -76,7 +87,15 @@ export default function AboutSection() {
             name: 'sponsor',
             children: (
                 <p className="about-muted">
-                    若本项目对你有帮助，欢迎通过 Issue / PR 参与改进；赞助渠道可在仓库说明中补充。
+                    若本项目对你有帮助，欢迎通过{' '}
+                    <ExternalLink
+                        href={`${APP_REPOSITORY_URL}/issues`}
+                        className="about-link settings-about-link"
+                    >
+                        Issue / PR
+                        <ExternalLinkIcon size={12} aria-hidden />
+                    </ExternalLink>{' '}
+                    参与改进；赞助方式见仓库 README。
                 </p>
             ),
         },
