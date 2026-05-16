@@ -1,0 +1,15 @@
+/** 子路由占满卡牌数据库页高度，供详情页内部 ScrollArea 计算剩余高度 */
+.library-routes-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.library-routes-shell > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}

@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { Alert, CopyButton, Tag, Button } from '@lobehub/ui'
-import { ArrowLeft, ExternalLink as ExternalLinkIcon, Loader2 } from 'lucide-react'
+import { Alert, CopyButton, Tag, Button, Dropdown, Form, Menu, ScrollArea } from '@lobehub/ui'
+import { ArrowLeft, Download, ExternalLink as ExternalLinkIcon, Loader2 } from 'lucide-react'
 import { fetchCardById } from '../../services/ygoprodeckApi'
+import {
+    formatYgoAttribute,
+    formatYgoCardType,
+    formatYgoRace,
+} from '../../config/ygoDisplayLabels'
 import {
     getCardImageUrlLarge,
     isExtraDeckCard,
 } from '../../config/ygoCardUtils'
 import useYgoDatabaseStore from '../../store/useYgoDatabaseStore'
 import { openExternalLink } from '../../utils/openExternalLink'
+import { downloadCardImage } from './cardLibraryHelpers'
 import './CardDetail.css'
 
 function formatStat(card) {
@@ -141,6 +147,28 @@ export default function CardDetail() {
 
     const imgUrl = card ? getCardImageUrlLarge(card) : ''
 
+    const imageContextMenuItems = card
+        ? [
+            {
+                key: 'save-image',
+                label: '另存为图片',
+                icon: <Download size={14} />,
+                onClick: () => {
+                    void downloadCardImage(card)
+                },
+            },
+        ]
+        : []
+
+    const cardSetFormItems =
+        card && Array.isArray(card.card_sets) && card.card_sets.length > 0
+            ? card.card_sets.slice(0, 24).map((s, i) => ({
+                key: `set-${s.set_code || i}`,
+                label: s.set_name || '未命名卡包',
+                desc: [s.set_code, s.set_rarity].filter(Boolean).join(' · ') || undefined,
+            }))
+            : []
+
     return (
         <div className="card-detail-page">
             <div className="card-detail-toolbar">
@@ -167,57 +195,82 @@ export default function CardDetail() {
 
             {!loading && card && (
                 <div className="card-detail-layout">
-                    {partialNotice && (
-                        <Alert
-                            type="warning"
-                            showIcon
-                            style={{ marginBottom: 16 }}
-                            description={
-                                <>
-                                    <strong>
-                                        当前为卡组缓存中的精简数据，攻防与效果等可能不完整
-                                    </strong>
-                                    <div style={{ marginTop: 8 }}>
-                                        请联网打开本页，或在卡牌数据库使用本地全库后重新进入。
-                                    </div>
-                                </>
-                            }
-                        />
-                    )}
                     <aside className="card-detail-visual">
-                        <div className="card-detail-frame">
-                            <img
-                                src={imgUrl}
-                                alt={card.name}
-                                className="card-detail-img"
-                                referrerPolicy="no-referrer"
-                            />
-                        </div>
+                        <Dropdown
+                            trigger={['contextMenu']}
+                            menu={{ items: imageContextMenuItems }}
+                            popupRender={() => (
+                                <Menu variant="outlined" shadow items={imageContextMenuItems} />
+                            )}
+                        >
+                            <div
+                                className="card-detail-frame"
+                                title="右键另存为图片"
+                            >
+                                <img
+                                    src={imgUrl}
+                                    alt={card.name}
+                                    className="card-detail-img"
+                                    referrerPolicy="no-referrer"
+                                    draggable={false}
+                                />
+                            </div>
+                        </Dropdown>
                         <div className="card-detail-meta-badges">
                             <span className="card-detail-id-row">
                                 <Tag color="blue">#{card.id}</Tag>
                                 <CopyButton content={String(card.id)} title="复制卡牌编号" />
                             </span>
-                            {isExtraDeckCard(card) && <Tag color="purple">额外卡组</Tag>}
+                            {isExtraDeckCard(card) ? (
+                                <Tag color="purple">额外卡组</Tag>
+                            ) : null}
                         </div>
                     </aside>
 
                     <main className="card-detail-main">
+                        {partialNotice ? (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                className="card-detail-partial-alert"
+                                description={
+                                    <>
+                                        <strong>
+                                            当前为卡组缓存中的精简数据，攻防与效果等可能不完整
+                                        </strong>
+                                        <div style={{ marginTop: 8 }}>
+                                            请联网打开本页，或在卡牌数据库使用本地全库后重新进入。
+                                        </div>
+                                    </>
+                                }
+                            />
+                        ) : null}
+
                         <header className="card-detail-header">
                             <h1 className="card-detail-title">{card.name}</h1>
                             <p className="card-detail-type-line">
-                                <Tag>{card.type}</Tag>
-                                {card.attribute && <Tag color="orange">{card.attribute}</Tag>}
-                                {card.race && <Tag>{card.race}</Tag>}
-                                {card.archetype && (
+                                <Tag>{formatYgoCardType(card.type)}</Tag>
+                                {card.attribute ? (
+                                    <Tag color="orange">
+                                        {formatYgoAttribute(card.attribute)}
+                                    </Tag>
+                                ) : null}
+                                {card.race ? <Tag>{formatYgoRace(card.race)}</Tag> : null}
+                                {card.archetype ? (
                                     <Tag color="geekblue">{card.archetype}</Tag>
-                                )}
+                                ) : null}
                             </p>
                         </header>
 
                         {formatStat(card)}
 
-                        <section className="card-detail-block">
+                        <ScrollArea
+                            flex={1}
+                            className="card-detail-scroll"
+                            contentProps={{ className: 'card-detail-scroll-content' }}
+                            style={{ minHeight: 0, height: '100%' }}
+                        >
+                            <section className="card-detail-block">
                             <h2 className="card-detail-section-title">效果文本</h2>
                             <div className="card-detail-desc">
                                 {(card.desc || '（无效果文本）').split('\n').map((line, i) => (
@@ -226,31 +279,37 @@ export default function CardDetail() {
                             </div>
                         </section>
 
-                        {Array.isArray(card.card_sets) && card.card_sets.length > 0 && (
-                            <section className="card-detail-block card-detail-block-muted">
-                                <h2 className="card-detail-section-title">收录卡包</h2>
-                                <ul className="card-detail-set-list">
-                                    {card.card_sets.slice(0, 12).map((s, i) => (
-                                        <li key={i}>
-                                            <span>{s.set_name}</span>
-                                            <span className="card-detail-set-code">{s.set_code}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                        {cardSetFormItems.length > 0 ? (
+                            <section className="card-detail-block card-detail-sets-form">
+                                <Form
+                                    variant="outlined"
+                                    layout="horizontal"
+                                    labelAlign="left"
+                                    items={[
+                                        {
+                                            key: 'card-sets',
+                                            title: '收录卡包',
+                                            children: cardSetFormItems,
+                                        },
+                                    ]}
+                                />
                             </section>
-                        )}
+                        ) : null}
+                        </ScrollArea>
 
-                        <a
-                            href={`https://ygoprodeck.com/card/${card.id}`}
-                            className="card-detail-ext-link"
-                            onClick={(e) => {
-                                e.preventDefault()
-                                openExternalLink(`https://ygoprodeck.com/card/${card.id}`)
-                            }}
-                        >
-                            在 YGOProDeck 查看
-                            <ExternalLinkIcon size={14} />
-                        </a>
+                        <div className="card-detail-footer">
+                            <a
+                                href={`https://ygoprodeck.com/card/${card.id}`}
+                                className="card-detail-ext-link"
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    openExternalLink(`https://ygoprodeck.com/card/${card.id}`)
+                                }}
+                            >
+                                在 YGOProDeck 查看
+                                <ExternalLinkIcon size={14} />
+                            </a>
+                        </div>
                     </main>
                 </div>
             )}

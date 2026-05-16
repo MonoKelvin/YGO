@@ -61,7 +61,8 @@ function firstUrlMatching(predicate) {
  * @param {string} attribute 怪兽属性 key
  */
 export function resolveAttributeArtUrl(attribute) {
-  const key = (attribute || 'earth').toLowerCase()
+  const key = String(attribute || '').trim().toLowerCase()
+  if (!key) return null
   return firstExisting([
     `Attribute/cn/${key}.png`,
     `Attribute/cn/${key}.jpg`,

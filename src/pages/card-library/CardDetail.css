@@ -3,14 +3,21 @@
   max-width: min(960px, 100%);
   margin: 0 auto;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .card-detail-toolbar {
+  flex: 0 0 auto;
   margin-bottom: var(--spacing-lg);
 }
 
 .card-detail-loading,
 .card-detail-error {
+  flex: 1 1 auto;
   padding: var(--spacing-xxl);
   text-align: center;
 }
@@ -20,10 +27,12 @@
 }
 
 .card-detail-layout {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(220px, 320px) 1fr;
   gap: var(--spacing-xl);
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 768px) {
@@ -33,14 +42,15 @@
 }
 
 .card-detail-visual {
-  position: sticky;
-  top: var(--spacing-md);
+  flex-shrink: 0;
+  align-self: start;
 }
 
 .card-detail-frame {
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--color-border);
+  cursor: context-menu;
 }
 
 .card-detail-img {
@@ -66,11 +76,19 @@
 
 .card-detail-main {
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-detail-partial-alert {
+  flex: 0 0 auto;
+  margin-bottom: var(--spacing-md);
 }
 
 .card-detail-header {
+  flex: 0 0 auto;
   margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-lg);
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
@@ -89,10 +107,11 @@
 }
 
 .card-detail-stats-grid {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .card-detail-stat {
@@ -108,18 +127,75 @@
   margin-bottom: var(--spacing-xs);
 }
 
-.card-detail-block {
-  margin-bottom: var(--spacing-xl);
+.card-detail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  background: transparent !important;
 }
 
-.card-detail-block-muted {
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle);
+.card-detail-scroll-content {
+  padding-block: var(--spacing-xs) var(--spacing-md);
+  padding-inline-end: calc(var(--spacing-md) + 10px);
+  box-sizing: border-box;
+}
+
+.card-detail-sets-form {
+  margin-bottom: var(--spacing-xs);
+}
+
+/** 收录卡包 Form：仅收紧本区块上下留白 */
+.card-detail-sets-form .ant-form {
+  margin: 0;
+  padding-block: 0;
+}
+
+.card-detail-sets-form .ant-collapse {
+  margin-block: 0;
+}
+
+.card-detail-sets-form .ant-collapse-item {
+  margin-bottom: 0;
+}
+
+.card-detail-sets-form .ant-collapse-header {
+  align-items: center;
+  min-height: auto !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  line-height: 1.35;
+}
+
+.card-detail-sets-form .ant-collapse-content-box {
+  padding: 0 !important;
+}
+
+.card-detail-sets-form .ant-form-item {
+  margin-bottom: 0 !important;
+  padding-block: 8px;
+}
+
+.card-detail-sets-form .ant-form-item-row {
+  align-items: center;
+}
+
+.card-detail-sets-form .ant-form-item-label {
+  padding-block: 0 !important;
+  line-height: 1.35;
+}
+
+.card-detail-sets-form .ant-form-item-label > label {
+  height: auto;
+  line-height: 1.35;
+}
+
+.card-detail-sets-form .ant-form-item-control {
+  padding-block: 0 !important;
+  line-height: 1.35;
 }
 
 .card-detail-section-title {
-  margin: 0 0 var(--spacing-md);
+  margin: 0 0 var(--spacing-xs);
   font-size: var(--font-size-md);
   font-weight: 600;
 }
@@ -133,31 +209,21 @@
   margin: 0 0 var(--spacing-sm);
 }
 
-.card-detail-set-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--font-size-sm);
-}
-
-.card-detail-set-list li {
+.card-detail-footer {
+  flex: 0 0 auto;
   display: flex;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: var(--spacing-2xs) 0;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.card-detail-set-code {
-  font-family: ui-monospace, monospace;
-  opacity: 0.85;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin-top: var(--spacing-md);
+  padding-inline-end: calc(var(--spacing-xl) + var(--spacing-md));
+  box-sizing: border-box;
 }
 
 .card-detail-ext-link {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-2xs);
-  margin-top: var(--spacing-md);
   font-size: var(--font-size-sm);
 }
 

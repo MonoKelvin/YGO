@@ -223,7 +223,24 @@
 }
 
 .card-lib-table .card-lib-row {
-  cursor: default;
+  cursor: pointer;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-lib-table tbody tr.card-lib-row:hover {
+  background: color-mix(
+    in srgb,
+    var(--lobe-color-primary, var(--color-primary)) 7%,
+    var(--lobe-color-bg-container, var(--color-bg-container))
+  );
+}
+
+[data-theme='dark'] .card-lib-table tbody tr.card-lib-row:hover {
+  background: color-mix(
+    in srgb,
+    var(--lobe-color-primary, var(--color-primary)) 10%,
+    var(--lobe-color-bg-elevated, var(--color-bg-elevated))
+  );
 }
 
 .card-lib-actions {

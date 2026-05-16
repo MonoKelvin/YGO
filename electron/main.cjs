@@ -8,7 +8,10 @@ const {
     shell,
     Menu,
     clipboard,
+    nativeImage,
+    net,
 } = require('electron');
+const { fileURLToPath } = require('url');
 
 /** 存储创建的子窗口，用于管理窗口生命周期 */
 const childWindows = new Map();
@@ -369,6 +372,8 @@ ipcMain.handle('open-file-dialog', async (event, options) => {
 
 ipcMain.handle('save-file-dialog', async (event, options) => {
     const result = await dialog.showSaveDialog(mainWindow, {
+        title: options.title || undefined,
+
         defaultPath: options.defaultPath,
 
         filters: options.filters || [{ name: 'PNG Image', extensions: ['png'] }],
@@ -384,6 +389,164 @@ ipcMain.handle('read-file', async (event, filePath) => {
         return { success: true, data: data.toString('base64') };
     } catch (error) {
         return { success: false, error: error.message };
+    }
+});
+
+/**
+ * 将本地插图读成 Data URL，供渲染进程在 webSecurity 下绘制到 canvas（避免 http 页无法加载 file://）
+ */
+ipcMain.handle('read-local-image-as-data-url', async (_event, srcRaw) => {
+    try {
+        const raw = String(srcRaw || '').trim();
+        if (!raw) {
+            return { success: false, error: 'empty' };
+        }
+        let fp = '';
+        if (/^file:/i.test(raw)) {
+            fp = fileURLToPath(raw);
+        } else if (/^[a-zA-Z]:[\\/]/.test(raw) || raw.startsWith('\\\\')) {
+            fp = path.normalize(raw);
+        } else if (raw.startsWith('/')) {
+            fp = raw;
+        } else {
+            return { success: false, error: 'unsupported path' };
+        }
+        if (!fs.existsSync(fp)) {
+            return { success: false, error: 'not found' };
+        }
+        const ni = nativeImage.createFromPath(fp);
+        if (ni.isEmpty()) {
+            return { success: false, error: 'invalid image' };
+        }
+        return { success: true, dataUrl: ni.toDataURL() };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+});
+
+/** 与常见浏览器一致的 UA，减少 CDN / 防盗链对 Electron 默认 UA 的拦截 */
+const REMOTE_IMAGE_FETCH_HEADERS = {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+};
+
+/**
+ * 轻量探测远程 URL（HEAD）。不支持 HEAD 的站点会失败并回退到渲染进程 `<img>` 探测。
+ */
+ipcMain.handle('probe-remote-image-url', async (_event, urlRaw) => {
+    const url = String(urlRaw || '').trim();
+    if (!/^https?:\/\//i.test(url)) {
+        return { success: false, error: 'invalid url' };
+    }
+    try {
+        const headRes = await net.fetch(url, {
+            method: 'HEAD',
+            redirect: 'follow',
+            headers: REMOTE_IMAGE_FETCH_HEADERS,
+        });
+        if (!headRes.ok) {
+            return { success: false, error: `HTTP ${headRes.status}` };
+        }
+        const ct = (headRes.headers.get('content-type') || '').toLowerCase();
+        if (ct.startsWith('image/') || ct.includes('octet-stream') || !ct.trim()) {
+            return { success: true };
+        }
+        return { success: false, error: 'unexpected content-type' };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+});
+
+/**
+ * 主进程拉取远程图片并转为 Data URL，供 canvas 绘制（避免渲染进程 CORS / 防盗链；导出 PNG 时画布不被污染）
+ */
+ipcMain.handle('fetch-remote-image-as-data-url', async (_event, urlRaw) => {
+    const url = String(urlRaw || '').trim();
+    if (!/^https?:\/\//i.test(url)) {
+        return { success: false, error: 'invalid url' };
+    }
+    const maxBytes = 40 * 1024 * 1024;
+    try {
+        const res = await net.fetch(url, {
+            redirect: 'follow',
+            headers: REMOTE_IMAGE_FETCH_HEADERS,
+        });
+        if (!res.ok) {
+            return { success: false, error: `HTTP ${res.status}` };
+        }
+        const cl = res.headers.get('content-length');
+        if (cl && Number(cl) > maxBytes) {
+            return { success: false, error: 'image too large' };
+        }
+        const ab = await res.arrayBuffer();
+        if (ab.byteLength > maxBytes) {
+            return { success: false, error: 'image too large' };
+        }
+        const buf = Buffer.from(ab);
+        const ni = nativeImage.createFromBuffer(buf);
+        if (!ni.isEmpty()) {
+            return { success: true, dataUrl: ni.toDataURL() };
+        }
+        const head = buf
+            .subarray(0, Math.min(2048, buf.length))
+            .toString('utf8')
+            .replace(/^\uFEFF/, '')
+            .trimStart();
+        if (head.startsWith('<svg') || (head.startsWith('<?xml') && head.includes('<svg'))) {
+            return {
+                success: true,
+                dataUrl: `data:image/svg+xml;base64,${buf.toString('base64')}`,
+            };
+        }
+        return { success: false, error: 'invalid or unsupported image' };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+});
+
+/**
+ * 先弹出保存对话框，再由主进程拉取远程图片写入（避免渲染进程打开图片预览窗口）
+ */
+ipcMain.handle('save-remote-image-as', async (_event, payload) => {
+    const url = String(payload?.url || '').trim();
+    const defaultPath = String(payload?.defaultPath || 'card.jpg').trim();
+    if (!/^https?:\/\//i.test(url)) {
+        return { success: false, error: 'invalid url' };
+    }
+    const maxBytes = 40 * 1024 * 1024;
+    try {
+        const dlg = await dialog.showSaveDialog(mainWindow, {
+            title: '保存卡图',
+            defaultPath,
+            filters: [
+                { name: '图像', extensions: ['jpg', 'jpeg', 'png', 'webp'] },
+                { name: '所有文件', extensions: ['*'] },
+            ],
+        });
+        if (dlg.canceled || !dlg.filePath) {
+            return { success: false, canceled: true };
+        }
+
+        const res = await net.fetch(url, {
+            redirect: 'follow',
+            headers: REMOTE_IMAGE_FETCH_HEADERS,
+        });
+        if (!res.ok) {
+            return { success: false, error: `HTTP ${res.status}` };
+        }
+        const cl = res.headers.get('content-length');
+        if (cl && Number(cl) > maxBytes) {
+            return { success: false, error: 'image too large' };
+        }
+        const ab = await res.arrayBuffer();
+        if (ab.byteLength > maxBytes) {
+            return { success: false, error: 'image too large' };
+        }
+        fs.writeFileSync(dlg.filePath, Buffer.from(ab));
+        return { success: true, filePath: dlg.filePath };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
     }
 });
 
@@ -573,6 +736,26 @@ ipcMain.handle('open-path-in-explorer', async (_event, targetPath) => {
     }
 
     return { success: true };
+});
+
+ipcMain.handle('reveal-file-in-folder', async (_event, filePath) => {
+    const p = String(filePath || '').trim();
+
+    if (!p) {
+        return { success: false, error: '路径为空' };
+    }
+
+    try {
+        if (!fs.existsSync(p)) {
+            return { success: false, error: '文件不存在' };
+        }
+
+        shell.showItemInFolder(p);
+
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error?.message || String(error) };
+    }
 });
 
 ipcMain.handle('read-ygo-database', async () => {

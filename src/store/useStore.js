@@ -2,6 +2,22 @@ import { create } from 'zustand'
 import { DEFAULT_CARD, normalizeCard } from '../config/cardConstants'
 import { DEFAULT_LIBRARY_PAGE_SIZE } from '../config/librarySettings'
 
+/** 将 DIY 卡牌列表写入磁盘（失败仅打日志，不打断 UI） */
+function schedulePersistDiyCards() {
+  queueMicrotask(() => {
+    const api = typeof window !== 'undefined' ? window.electronAPI : null
+    if (!api?.saveCards) return
+    const cards = useCardStore.getState().cards
+    void api.saveCards(cards).then((res) => {
+      if (res && res.success === false && res.error) {
+        console.error('[saveCards]', res.error)
+      }
+    }).catch((err) => {
+      console.error('[saveCards]', err)
+    })
+  })
+}
+
 const useCardStore = create((set) => ({
   cards: [],
   currentCard: normalizeCard({ ...DEFAULT_CARD }),
@@ -30,25 +46,53 @@ const useCardStore = create((set) => ({
     previewVisible: true,
     autoRefresh: true,
     formData: normalizeCard({ ...DEFAULT_CARD }),
+    /** 外部载入表单时递增，供生成器同步插图区等本地 UI */
+    formLoadRevision: 0,
   },
 
   setCurrentCard: (card) => set({ currentCard: normalizeCard(card) }),
 
   resetCurrentCard: () => set({ currentCard: normalizeCard({ ...DEFAULT_CARD }) }),
 
-  addCard: (card) => set((state) => ({
-    cards: [...state.cards, { ...normalizeCard(card), id: Date.now().toString() }],
-  })),
+  /**
+   * 从卡牌浏览等外部载入：写入生成器 formData 与 currentCard（控件绑定 formData）。
+   */
+  loadCardIntoGenerator: (card) =>
+    set((state) => {
+      const data = normalizeCard(card)
+      return {
+        currentCard: data,
+        cardGenerator: {
+          ...state.cardGenerator,
+          formData: data,
+          autoRefresh: true,
+          formLoadRevision: (state.cardGenerator.formLoadRevision ?? 0) + 1,
+        },
+      }
+    }),
 
-  updateCard: (id, updatedCard) => set((state) => ({
-    cards: state.cards.map((c) =>
-      c.id === id ? { ...c, ...normalizeCard(updatedCard) } : c,
-    ),
-  })),
+  addCard: (card) => {
+    set((state) => ({
+      cards: [...state.cards, { ...normalizeCard(card), id: Date.now().toString() }],
+    }))
+    schedulePersistDiyCards()
+  },
 
-  deleteCard: (id) => set((state) => ({
-    cards: state.cards.filter((c) => c.id !== id),
-  })),
+  updateCard: (id, updatedCard) => {
+    set((state) => ({
+      cards: state.cards.map((c) =>
+        c.id === id ? { ...c, ...normalizeCard(updatedCard) } : c,
+      ),
+    }))
+    schedulePersistDiyCards()
+  },
+
+  deleteCard: (id) => {
+    set((state) => ({
+      cards: state.cards.filter((c) => c.id !== id),
+    }))
+    schedulePersistDiyCards()
+  },
 
   setSetting: (key, value) => set((state) => ({
     settings: { ...state.settings, [key]: value },
@@ -84,6 +128,7 @@ const useCardStore = create((set) => ({
       previewVisible: true,
       autoRefresh: true,
       formData: normalizeCard({ ...DEFAULT_CARD }),
+      formLoadRevision: 0,
     },
   }),
 }))

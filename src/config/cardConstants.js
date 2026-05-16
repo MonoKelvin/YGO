@@ -54,10 +54,11 @@ export const DEFAULT_CARD = {
   name: '',
   password: '',
   cardType: 'monster',
-  attribute: '',
-  level: 0,
-  race: '',
-  monsterCategory: '',
+  /** 与预览一致：默认地属性、3 星、兽族效果怪兽（可清空以隐藏对应卡图元素） */
+  attribute: 'earth',
+  level: 3,
+  race: '兽族',
+  monsterCategory: 'effect',
   spellType: 'normal',
   trapType: 'normal',
   attack: 0,
@@ -67,7 +68,10 @@ export const DEFAULT_CARD = {
   linkRating: 1,
   effect: '',
   description: '',
+  /** 画布使用的地址：file URL / https URL / data URL */
   imagePath: '',
+  /** 副标题展示用：本地绝对路径或在线 URL（不用于绘制） */
+  imageDisplayPath: '',
 }
 
 export const ATTRIBUTE_COLORS = {
@@ -81,7 +85,40 @@ export const ATTRIBUTE_COLORS = {
 }
 
 /**
+ * 等级：null 表示不显示星级；数字限制在 1～12
+ * @param {unknown} v
+ * @returns {number | null}
+ */
+function normalizeLevelValue(v) {
+  if (v === null || v === undefined || v === '') {
+    return null
+  }
+  const n = Number(v)
+  if (!Number.isFinite(n)) {
+    return null
+  }
+  return Math.min(12, Math.max(1, n))
+}
+
+/**
+ * 攻防数值：null 表示未填写，预览不绘制该项；0 为合法显示值。
+ * @param {unknown} v
+ * @returns {number | null}
+ */
+function normalizeOptionalStat(v) {
+  if (v === null || v === undefined || v === '') {
+    return null
+  }
+  const n = Number(v)
+  if (!Number.isFinite(n)) {
+    return null
+  }
+  return Math.min(9999, Math.max(0, Math.floor(n)))
+}
+
+/**
  * 兼容旧存档字段，保证预览与表单一致。
+ * 等级为 null 时不绘制星级；怪兽类别可为空字符串。
  * @param {Record<string, unknown>} raw
  */
 export function normalizeCard(raw) {
@@ -89,15 +126,27 @@ export function normalizeCard(raw) {
   const cardType = base.cardType || 'monster'
   const attackInfinite = Boolean(base.attackInfinite)
   const defenseInfinite = Boolean(base.defenseInfinite)
+  const levelNorm = normalizeLevelValue(base.level)
+  const mcRaw = base.monsterCategory
+  const monsterCategory =
+    mcRaw === null || mcRaw === undefined || String(mcRaw).trim() === ''
+      ? ''
+      : String(mcRaw)
+
+  const attrRaw = String(base.attribute ?? '').trim().toLowerCase()
+  const raceRaw = String(base.race ?? '').trim()
+
   return {
     ...base,
     cardType,
-    level: Math.min(12, Math.max(1, Number(base.level) || 1)),
-    attack: Math.min(9999, Math.max(0, Number(base.attack) || 0)),
-    defense: Math.min(9999, Math.max(0, Number(base.defense) || 0)),
+    attribute: attrRaw,
+    race: raceRaw,
+    level: levelNorm,
+    attack: normalizeOptionalStat(base.attack),
+    defense: normalizeOptionalStat(base.defense),
     attackInfinite,
     defenseInfinite,
-    monsterCategory: base.monsterCategory || 'effect',
+    monsterCategory,
     linkRating: Math.min(8, Math.max(1, Number(base.linkRating) || 1)),
     spellType: base.spellType || 'normal',
     trapType: base.trapType || 'normal',
@@ -106,6 +155,8 @@ export function normalizeCard(raw) {
       .replace(/\D/g, '')
       .slice(0, 8),
     effect: String(base.effect ?? '').slice(0, 4500),
+    imagePath: String(base.imagePath ?? '').trim().slice(0, 4096),
+    imageDisplayPath: String(base.imageDisplayPath ?? '').trim().slice(0, 4096),
   }
 }
 

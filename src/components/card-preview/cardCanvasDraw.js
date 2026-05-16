@@ -1,9 +1,7 @@
 import {
   CARD_H,
   CARD_W,
-  CARD_NAME_CHAR_HARD_CAP,
   CARD_NAME_MIN_SCALE_X,
-  CARD_NAME_VISUAL_BUDGET,
   FRAME_THEME,
   getYgoLayoutZones,
 } from '../../config/cardLayout'
@@ -22,7 +20,7 @@ import { getMoldFontStacks } from '../../config/moldFonts'
 export function wrapTextLines(ctx, text, maxWidth) {
   const lines = []
   let line = ''
-  for (const char of text || '') {
+  for (const char of [...(text || '')]) {
     const next = line + char
     if (ctx.measureText(next).width > maxWidth && line !== '') {
       lines.push(line)
@@ -37,80 +35,158 @@ export function wrapTextLines(ctx, text, maxWidth) {
 
 const NAME_ELLIPSIS = '\u2026'
 
-/**
- * 按「M 宽」为 1 的视觉预算 + `maxWidth` 双约束截断卡名（中英数字自动按实际字宽计入）。
- * @param {CanvasRenderingContext2D} ctx 已设好 `font`
- * @param {string} trimmed 已 trim 的卡名
- * @param {number} maxWidthPx `z.name.maxWidth`
- * @param {number} visualBudget 见 `CARD_NAME_VISUAL_BUDGET`
- * @param {number} hardCap 见 `CARD_NAME_CHAR_HARD_CAP`
- */
-function sliceNameByVisualBudget(ctx, trimmed, maxWidthPx, visualBudget, hardCap) {
-  if (!trimmed) return '???'
-  const refW = ctx.measureText('M').width || ctx.measureText('0').width || 1
-  let out = ''
-  let accUnits = 0
-  const chars = [...trimmed].slice(0, hardCap)
-  for (const ch of chars) {
-    const next = out + ch
-    if (ctx.measureText(next).width > maxWidthPx) break
-    const chUnits = Math.max(0.35, ctx.measureText(ch).width / refW)
-    if (out !== '' && accUnits + chUnits > visualBudget + 1e-6) break
-    out = next
-    accUnits += chUnits
-  }
-  if (out) return out
-  return chars[0] || '?'
+/** 效果正文：在窄画布上设上下限，避免过小不可读或过大溢出（ygo-card 模板为 24px@813） */
+const DESC_BODY_MIN_PX = 11
+const DESC_BODY_MAX_PX = 14
+
+/** 灵摆区正文（模板 lbFontSize 22） */
+const DESC_PEND_MIN_PX = 10
+const DESC_PEND_MAX_PX = 12.5
+
+/** 种族/类别行（模板 race 26，略放大作「标题」） */
+function canvasRaceTitlePx(r) {
+  return Math.min(19, Math.max(14, Math.round(30 * r)))
+}
+
+/** 魔陷类型行（cnWebConfig type 44～46，common 48） */
+function canvasSpellTypeTitlePx(r) {
+  return Math.min(24, Math.max(18, Math.round(46 * r)))
+}
+
+function resolveDescBodyPx(r) {
+  return Math.min(DESC_BODY_MAX_PX, Math.max(DESC_BODY_MIN_PX, Math.round(24 * r * 1.2)))
+}
+
+function resolveDescPendPx(r) {
+  return Math.min(DESC_PEND_MAX_PX, Math.max(DESC_PEND_MIN_PX, Math.round(22 * r * 1.1)))
 }
 
 /**
- * 卡名在固定 `maxWidth` 下的绘制文案与水平缩放（避免逐字截断死循环与 O(n²) measureText）。
+ * 效果正文：按 maxWidth 逐段 `wrapTextLines` 自动换行；仍超 maxLines 时略缩小字号。
+ * @returns {{ lines: string[], drawFontPx: number }}
+ */
+function buildDescLinesForCanvas(ctx, desc, baseFontPx, fontStack, maxLines, maxWidth, minPx = DESC_BODY_MIN_PX) {
+  const trimmed = desc && String(desc).trim() ? String(desc).trim() : ''
+  if (!trimmed) {
+    return { lines: [], drawFontPx: baseFontPx }
+  }
+
+  const collectLines = (fontPx) => {
+    ctx.font = `${fontPx}px ${fontStack}`
+    const blocks = trimmed.split('\n')
+    const acc = []
+    for (const block of blocks) {
+      const b = block.replace(/\r/g, '')
+      if (!b.trim()) {
+        continue
+      }
+      acc.push(...wrapTextLines(ctx, b, maxWidth))
+    }
+    return acc
+  }
+
+  let drawFontPx = baseFontPx
+  let lines = collectLines(drawFontPx)
+  while (lines.length > maxLines && drawFontPx > minPx + 0.25) {
+    drawFontPx = Math.max(minPx, Math.round((drawFontPx - 0.5) * 10) / 10)
+    lines = collectLines(drawFontPx)
+  }
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines)
+  }
+  return { lines, drawFontPx }
+}
+
+/**
+ * 在裁剪区内绘制描述行；末行使用 `maxWidth` 参数做横向压缩（对齐 ygo-card drawDesc）。
+ */
+function drawDescLinesClipped(ctx, lines, x, y0, lineH, maxW, maxLines, fontPx, fontStack, fillStyle) {
+  const lim = Math.min(lines.length, maxLines)
+  if (lim <= 0) {
+    return
+  }
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(x - 1, y0 - 1, maxW + 2, maxLines * lineH + 2)
+  ctx.clip()
+  ctx.font = `${fontPx}px ${fontStack}`
+  ctx.fillStyle = fillStyle
+  ctx.textBaseline = 'top'
+  ctx.textAlign = 'left'
+  for (let i = 0; i < lim; i++) {
+    const ty = y0 + i * lineH
+    ctx.fillText(lines[i], x, ty, maxW)
+  }
+  ctx.restore()
+}
+
+const NAME_DRAW_HARD_CAP = 96
+
+/**
+ * 卡名：整串测量 → 优先整体水平缩放；仍超出则用下限缩放 + 截断省略号（动态压缩量）。
  * @param {CanvasRenderingContext2D} ctx 已设好 `font`
  * @param {string} rawName
- * @param {number} maxWidth 由版面 `z.name.maxWidth` 得到
+ * @param {number} maxWidth
  * @returns {{ drawText: string, scaleX: number }}
  */
 export function fitCardNameForCanvas(ctx, rawName, maxWidth) {
   const trimmed = rawName && String(rawName).trim() ? String(rawName).trim() : ''
-  const base = trimmed
-    ? sliceNameByVisualBudget(
-        ctx,
-        trimmed,
-        maxWidth,
-        CARD_NAME_VISUAL_BUDGET,
-        CARD_NAME_CHAR_HARD_CAP,
-      )
-    : '???'
+  if (!trimmed) {
+    return { drawText: '', scaleX: 1 }
+  }
   if (maxWidth <= 1) {
-    return { drawText: base.slice(0, 1) || '?', scaleX: 1 }
+    return { drawText: [...trimmed][0] || '', scaleX: 1 }
   }
 
-  const fullW = ctx.measureText(base).width
+  const chars = [...trimmed].slice(0, NAME_DRAW_HARD_CAP)
+  const text = chars.join('')
+  const fullW = ctx.measureText(text).width
+  if (fullW <= 0) {
+    return { drawText: chars[0] || '', scaleX: 1 }
+  }
+
+  const minScale = CARD_NAME_MIN_SCALE_X
+
   if (fullW <= maxWidth) {
-    return { drawText: base, scaleX: 1 }
+    return { drawText: text, scaleX: 1 }
   }
 
-  const scale = maxWidth / fullW
-  if (scale >= CARD_NAME_MIN_SCALE_X) {
-    return { drawText: base, scaleX: scale }
+  const scaleUniform = maxWidth / fullW
+  if (scaleUniform >= minScale) {
+    return { drawText: text, scaleX: scaleUniform }
   }
 
   const ell = NAME_ELLIPSIS
-  const ellW = ctx.measureText(ell).width
-  if (ellW >= maxWidth) {
-    return { drawText: ell, scaleX: 1 }
-  }
+  /** 使用最小水平缩放时，测量宽度不得超过该值 */
+  const budget = maxWidth / minScale
 
   let lo = 0
-  let hi = base.length
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2)
-    const cand = base.slice(0, mid) + ell
-    if (ctx.measureText(cand).width <= maxWidth) lo = mid
-    else hi = mid - 1
+  let hi = text.length
+  let bestLen = 0
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    const pre = chars.slice(0, mid).join('')
+    const needEll = mid < text.length
+    const cand = needEll ? pre + ell : pre
+    const cw = ctx.measureText(cand).width
+    if (cw <= budget + 1e-6) {
+      bestLen = mid
+      lo = mid + 1
+    } else {
+      hi = mid - 1
+    }
   }
-  const drawText = lo === 0 ? ell : base.slice(0, lo) + ell
-  return { drawText, scaleX: 1 }
+
+  let drawText =
+    bestLen >= text.length ? text : `${chars.slice(0, bestLen).join('')}${bestLen < text.length ? ell : ''}`
+
+  if (ctx.measureText(drawText).width <= 0) {
+    drawText = chars[0] || '?'
+  }
+
+  const wFinal = ctx.measureText(drawText).width
+  const scaleX = Math.max(minScale, Math.min(1, maxWidth / Math.max(wFinal, 1)))
+  return { drawText, scaleX }
 }
 
 function drawStar(ctx, cx, cy, spikes, outerR, innerR, fillStyle) {
@@ -203,7 +279,8 @@ function drawPlaceholderFrame(ctx, w, h, theme) {
  * @param {{ frameImg?: HTMLImageElement | null, attrImg?: HTMLImageElement | null, artImg?: HTMLImageElement | null, starIconImg?: HTMLImageElement | null }} assets
  */
 export function paintCard(ctx, card, assets = {}) {
-  const { name: fontName, desc: fontDesc } = getMoldFontStacks()
+  const { name: fontNumber, desc: fontDesc, cnTitle: fontCnTitle, statsCn: fontStatsCn } =
+    getMoldFontStacks()
   const w = CARD_W
   const h = CARD_H
   const z = getYgoLayoutZones(card, w, h)
@@ -225,30 +302,33 @@ export function paintCard(ctx, card, assets = {}) {
 
   const pic = z.pic
 
-  /** 卡名：与 ygo-card common.js name.fontSize ≈ 65（813 基准）；宽度上限为 `z.name.maxWidth` */
-  const nameStr = (card.name || '???').trim() || '???'
-  ctx.font = `bold ${Math.round(65 * z.r)}px ${fontName}`
-  ctx.textBaseline = 'middle'
-  ctx.textAlign = 'left'
-  const { drawText: drawName, scaleX: nameScaleX } = fitCardNameForCanvas(
-    ctx,
-    nameStr,
-    z.name.maxWidth,
-  )
-  ctx.save()
-  if (nameScaleX !== 1) {
-    ctx.translate(z.name.x, z.name.y)
-    ctx.scale(nameScaleX, 1)
-    ctx.translate(-z.name.x, -z.name.y)
+  /** 卡名：对齐 ygo-card common.js name.fontSize 65 */
+  const nameTrimmed = String(card.name || '').trim()
+  if (nameTrimmed) {
+    ctx.font = `bold ${Math.round(65 * z.r)}px ${fontCnTitle}`
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+    const { drawText: drawName, scaleX: nameScaleX } = fitCardNameForCanvas(
+      ctx,
+      nameTrimmed,
+      z.name.maxWidth,
+    )
+    ctx.save()
+    if (nameScaleX !== 1) {
+      ctx.translate(z.name.x, z.name.y)
+      ctx.scale(nameScaleX, 1)
+      ctx.translate(-z.name.x, -z.name.y)
+    }
+    ctx.fillStyle = '#1a1a1a'
+    if (nameScaleX === 1) {
+      ctx.fillText(drawName, z.name.x, z.name.y, z.name.maxWidth)
+    } else {
+      ctx.fillText(drawName, z.name.x, z.name.y)
+    }
+    ctx.restore()
   }
-  ctx.strokeStyle = 'rgba(255,255,255,0.85)'
-  ctx.lineWidth = nameScaleX < 1 ? (3 * z.r) / Math.max(nameScaleX, 0.2) : 3 * z.r
-  ctx.strokeText(drawName, z.name.x, z.name.y)
-  ctx.fillStyle = '#1a1a1a'
-  ctx.fillText(drawName, z.name.x, z.name.y)
-  ctx.restore()
 
-  if (cardType === 'monster' && !z.isLink && Number(card.level) > 0) {
+  if (cardType === 'monster' && !z.isLink && card.level != null && Number(card.level) > 0) {
     drawLevelStarsYgo(ctx, card.level, z, assets.starIconImg)
   }
 
@@ -280,7 +360,7 @@ export function paintCard(ctx, card, assets = {}) {
       z.attrCx,
       z.attrCy,
       attrR,
-      fontName,
+      fontNumber,
       z.r,
     )
   }
@@ -314,28 +394,38 @@ export function paintCard(ctx, card, assets = {}) {
     const hasRace = card.race && card.race.trim()
     const hasCat = card.monsterCategory && card.monsterCategory.trim()
     if (hasRace || hasCat) {
-      ctx.font = `${Math.round(26 * z.r)}px ${fontName}`
+      ctx.font = `${canvasRaceTitlePx(z.r)}px ${fontCnTitle}`
       const race = hasRace ? (card.race.replace(/族$/, '') + '族') : ''
       const catLabel = hasCat ? labelFromOptions(MONSTER_CATEGORIES, card.monsterCategory) : ''
-      typeText = `「${race}${hasRace && hasCat ? '／' : ''}${catLabel}」`
+      typeText = `[${race}${hasRace && hasCat ? '/' : ''}${catLabel}]`
       ctx.textAlign = 'left'
-      ctx.fillText(typeText, z.raceLine.x, z.raceLine.y)
+      ctx.fillText(typeText, z.raceLine.x, z.raceLine.y, z.raceLine.maxWidth)
     }
   } else if (cardType === 'spell') {
     const hasSpellType = card.spellType && card.spellType.trim()
     if (hasSpellType) {
-      ctx.font = `${Math.round(48 * z.r)}px ${fontName}`
-      typeText = `「${labelFromOptions(SPELL_CARD_TYPES, card.spellType)}」`
-      ctx.textAlign = 'right'
-      ctx.fillText(typeText, z.spellTypeLine.x, z.spellTypeLine.y)
+      ctx.font = `${canvasSpellTypeTitlePx(z.r)}px ${fontCnTitle}`
+      typeText = `[${labelFromOptions(SPELL_CARD_TYPES, card.spellType)}]`
+      ctx.textAlign = 'left'
+      ctx.fillText(
+        typeText,
+        z.spellTypeLine.x,
+        z.spellTypeLine.y,
+        z.spellTypeLine.maxWidth,
+      )
     }
   } else {
     const hasTrapType = card.trapType && card.trapType.trim()
     if (hasTrapType) {
-      ctx.font = `${Math.round(48 * z.r)}px ${fontName}`
-      typeText = `「${labelFromOptions(TRAP_CARD_TYPES, card.trapType)}」`
-      ctx.textAlign = 'right'
-      ctx.fillText(typeText, z.spellTypeLine.x, z.spellTypeLine.y)
+      ctx.font = `${canvasSpellTypeTitlePx(z.r)}px ${fontCnTitle}`
+      typeText = `[${labelFromOptions(TRAP_CARD_TYPES, card.trapType)}]`
+      ctx.textAlign = 'left'
+      ctx.fillText(
+        typeText,
+        z.spellTypeLine.x,
+        z.spellTypeLine.y,
+        z.spellTypeLine.maxWidth,
+      )
     }
   }
 
@@ -351,53 +441,133 @@ export function paintCard(ctx, card, assets = {}) {
     }
   }
 
-  ctx.fillStyle = '#111'
-  ctx.font = `${Math.round(24 * z.r)}px ${fontDesc}`
-  ctx.textBaseline = 'top'
-  ctx.textAlign = 'left'
+  const bodyPx = resolveDescBodyPx(z.r)
+  const pendPx = resolveDescPendPx(z.r)
+  /** ygo-card common.js：monsterDesc.lineHeight 26，spellDesc 24，lbLineHeight 24.5 */
+  const lhMonster = 26 * z.r
+  const lhSpell = 24 * z.r
+  const lhPend = 24.5 * z.r
+  const descFill = '#111'
 
   if (isPendulum && pendBlock) {
-    const mainLines = wrapTextLines(ctx, mainDesc, z.monsterDesc.maxWidth)
-    let ty = z.monsterDesc.y
-    const lh = z.monsterDesc.lineHeight
-    const maxMain = z.monsterDesc.maxLines
-    mainLines.slice(0, maxMain).forEach((line) => {
-      ctx.fillText(line, z.monsterDesc.x, ty)
-      ty += lh
-    })
-    ctx.font = `${Math.round(22 * z.r)}px ${fontDesc}`
-    const pendLines = wrapTextLines(ctx, pendBlock, z.pendDesc.maxWidth)
-    let py = z.pendDesc.y
-    const plh = z.pendDesc.lineHeight
-    pendLines.slice(0, z.pendDesc.maxLines).forEach((line) => {
-      ctx.fillText(line, z.pendDesc.x, py)
-      py += plh
-    })
-  } else if (cardType === 'monster') {
-    const lines = wrapTextLines(ctx, mainDesc, z.monsterDesc.maxWidth)
-    let ty = z.monsterDesc.y
-    const lh = z.monsterDesc.lineHeight
-    lines.slice(0, z.monsterDesc.maxLines).forEach((line) => {
-      ctx.fillText(line, z.monsterDesc.x, ty)
-      ty += lh
-    })
-  } else {
-    const lines = wrapTextLines(ctx, bodyText, z.spellDesc.maxWidth)
-    let ty = z.spellDesc.y
-    const lh = z.spellDesc.lineHeight
-    lines.slice(0, z.spellDesc.maxLines).forEach((line) => {
-      ctx.fillText(line, z.spellDesc.x, ty)
-      ty += lh
-    })
+    const { lines: mainLines, drawFontPx: mainDrawPx } = buildDescLinesForCanvas(
+      ctx,
+      mainDesc,
+      bodyPx,
+      fontDesc,
+      z.monsterDesc.maxLines,
+      z.monsterDesc.maxWidth,
+    )
+    drawDescLinesClipped(
+      ctx,
+      mainLines,
+      z.monsterDesc.x,
+      z.monsterDesc.y,
+      lhMonster,
+      z.monsterDesc.maxWidth,
+      z.monsterDesc.maxLines,
+      mainDrawPx,
+      fontDesc,
+      descFill,
+    )
+    const { lines: pendLines, drawFontPx: pendDrawPx } = buildDescLinesForCanvas(
+      ctx,
+      pendBlock,
+      pendPx,
+      fontDesc,
+      z.pendDesc.maxLines,
+      z.pendDesc.maxWidth,
+      DESC_PEND_MIN_PX,
+    )
+    drawDescLinesClipped(
+      ctx,
+      pendLines,
+      z.pendDesc.x,
+      z.pendDesc.y,
+      lhPend,
+      z.pendDesc.maxWidth,
+      z.pendDesc.maxLines,
+      pendDrawPx,
+      fontDesc,
+      descFill,
+    )
+  } else if (isPendulum && mainDesc.trim()) {
+    const { lines: mainLines, drawFontPx: mainDrawPx } = buildDescLinesForCanvas(
+      ctx,
+      mainDesc,
+      bodyPx,
+      fontDesc,
+      z.monsterDesc.maxLines,
+      z.monsterDesc.maxWidth,
+    )
+    drawDescLinesClipped(
+      ctx,
+      mainLines,
+      z.monsterDesc.x,
+      z.monsterDesc.y,
+      lhMonster,
+      z.monsterDesc.maxWidth,
+      z.monsterDesc.maxLines,
+      mainDrawPx,
+      fontDesc,
+      descFill,
+    )
+  } else if (cardType === 'monster' && mainDesc.trim()) {
+    const { lines, drawFontPx } = buildDescLinesForCanvas(
+      ctx,
+      mainDesc,
+      bodyPx,
+      fontDesc,
+      z.monsterDesc.maxLines,
+      z.monsterDesc.maxWidth,
+    )
+    drawDescLinesClipped(
+      ctx,
+      lines,
+      z.monsterDesc.x,
+      z.monsterDesc.y,
+      lhMonster,
+      z.monsterDesc.maxWidth,
+      z.monsterDesc.maxLines,
+      drawFontPx,
+      fontDesc,
+      descFill,
+    )
+  } else if (cardType !== 'monster' && bodyText.trim()) {
+    const { lines, drawFontPx } = buildDescLinesForCanvas(
+      ctx,
+      bodyText,
+      bodyPx,
+      fontDesc,
+      z.spellDesc.maxLines,
+      z.spellDesc.maxWidth,
+    )
+    drawDescLinesClipped(
+      ctx,
+      lines,
+      z.spellDesc.x,
+      z.spellDesc.y,
+      lhSpell,
+      z.spellDesc.maxWidth,
+      z.spellDesc.maxLines,
+      drawFontPx,
+      fontDesc,
+      descFill,
+    )
   }
 
   if (cardType === 'monster') {
     const atkInfinite = Boolean(card.attackInfinite)
     const defInfinite = Boolean(card.defenseInfinite)
-    const hasAtk = atkInfinite || Number(card.attack) > 0
-    const hasDef = defInfinite || Number(card.defense) > 0
+    const atkVal = card.attack
+    const defVal = card.defense
+    const hasAtkNum = atkVal != null && Number.isFinite(Number(atkVal))
+    const hasDefNum = defVal != null && Number.isFinite(Number(defVal))
+    const hasAtk = atkInfinite || hasAtkNum
+    const hasDef = defInfinite || hasDefNum
+    const hasLinkRow = z.isLink && Number(card.linkRating) > 0
 
-    if (hasAtk || hasDef) {
+    if (hasAtk || hasDef || hasLinkRow) {
       ctx.strokeStyle = '#333'
       ctx.lineWidth = 2 * z.r
       ctx.beginPath()
@@ -405,51 +575,73 @@ export function paintCard(ctx, card, assets = {}) {
       ctx.lineTo(z.lineUnderStats.x + z.lineUnderStats.w, z.lineUnderStats.y)
       ctx.stroke()
 
-      ctx.font = `bold ${Math.round(36 * z.r)}px ${fontName}`
-      ctx.textBaseline = 'middle'
+      const labelFontPx = Math.round(34 * z.r)
+      const numFontPx = Math.round(36 * z.r)
+      const cnStatFontPx = Math.round(32 * z.r)
+      const linkLabelPx = Math.round(30 * z.r)
 
       if (hasAtk) {
-        const atkStr = atkInfinite ? '\u221e' : `${Math.min(9999, Math.max(0, Number(card.attack) || 0))}`
-        ctx.textAlign = 'right'
-        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
-        ctx.fillText(atkStr, z.atk.x, z.atk.y, z.atk.maxWidth)
+        const atkStr = atkInfinite
+          ? '\u7121\u9650\u5927'
+          : `${Math.min(9999, Math.max(0, Number(card.attack) || 0))}`
+        const atkLabelX = atkInfinite ? z.atk.labelX - 10 * z.r : z.atk.labelX
+        const atkValueX = atkInfinite ? z.atk.x + 10 * z.r : z.atk.x
         ctx.textAlign = 'left'
-        ctx.fillText('ATK/', z.atk.labelX, z.atk.labelY)
+        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
+        ctx.font = `${labelFontPx}px ${fontStatsCn}`
+        ctx.fillText('攻/', atkLabelX, z.atk.labelY)
+        ctx.textAlign = 'right'
+        ctx.font = atkInfinite
+          ? `${cnStatFontPx}px ${fontStatsCn}`
+          : `${numFontPx}px ${fontNumber}`
+        ctx.fillText(atkStr, atkValueX, z.atk.y)
       }
 
       if (z.isLink) {
-        const linkNum =
-          Number(card.linkRating) > 0
-            ? Number(card.linkRating)
-            : Math.min(8, Number(card.level) || 1)
-        ctx.textAlign = 'right'
-        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
-        ctx.fillText(`${linkNum}`, z.linkDef.x, z.linkDef.y, z.linkDef.maxWidth)
-        ctx.textAlign = 'left'
-        ctx.fillText('LINK-', z.linkDef.linkLabelX, z.linkDef.linkLabelY)
+        if (hasLinkRow) {
+          const linkNum =
+            Number(card.linkRating) > 0
+              ? Number(card.linkRating)
+              : Math.min(8, Number(card.level) || 1)
+          ctx.textAlign = 'left'
+          ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
+          ctx.font = `${linkLabelPx}px ${fontStatsCn}`
+          ctx.fillText('连/', z.linkDef.linkLabelX, z.linkDef.linkLabelY)
+          ctx.font = `${numFontPx}px ${fontNumber}`
+          ctx.textAlign = 'right'
+          ctx.fillText(`${linkNum}`, z.linkDef.x, z.linkDef.y)
+        }
       } else if (hasDef) {
-        const defStr = defInfinite ? '\u221e' : `${Math.min(9999, Math.max(0, Number(card.defense) || 0))}`
-        ctx.textAlign = 'right'
-        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
-        ctx.fillText(defStr, z.def.x, z.def.y, z.def.maxWidth)
+        const defStr = defInfinite
+          ? '\u7121\u9650\u5927'
+          : `${Math.min(9999, Math.max(0, Number(card.defense) || 0))}`
+        const defLabelX = defInfinite ? z.def.labelX - 10 * z.r : z.def.labelX
+        const defValueX = defInfinite ? z.def.x + 10 * z.r : z.def.x
         ctx.textAlign = 'left'
-        ctx.fillText('DEF/', z.def.labelX, z.def.labelY)
+        ctx.fillStyle = pwdLight ? '#ffffff' : '#111'
+        ctx.font = `${labelFontPx}px ${fontStatsCn}`
+        ctx.fillText('防/', defLabelX, z.def.labelY)
+        ctx.textAlign = 'right'
+        ctx.font = defInfinite
+          ? `${cnStatFontPx}px ${fontStatsCn}`
+          : `${numFontPx}px ${fontNumber}`
+        ctx.fillText(defStr, defValueX, z.def.y)
       }
     }
   }
+
+  ctx.font = `${Math.round(18 * z.r)}px ${fontDesc}`
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = pwdLight ? '#e5e7eb' : '#6b7280'
+  ctx.fillText('© KONAMI', z.copyright.x, z.copyright.y)
 
   const pwd = String(card.password || '').replace(/\D/g, '').slice(0, 8)
   if (pwd && pwd.length > 0) {
     ctx.font = `${Math.round(23 * z.r)}px ${fontDesc}`
     ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
     ctx.fillStyle = pwdLight ? '#ffffff' : '#6b7280'
     ctx.fillText(pwd.padStart(8, '0'), z.password.x, z.password.y)
-
-    ctx.fillStyle = pwdLight ? '#e5e7eb' : '#6b7280'
-    ctx.font = `${Math.round(18 * z.r)}px ${fontDesc}`
-    ctx.textAlign = 'right'
-    ctx.fillText('© KONAMI', z.copyright.x, z.copyright.y)
   }
 
   ctx.restore()

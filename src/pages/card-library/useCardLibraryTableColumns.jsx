@@ -2,6 +2,10 @@ import { useMemo } from 'react'
 import { Tag, Tooltip, Button } from '@lobehub/ui'
 import { Download, Heart, Plus } from 'lucide-react'
 import {
+  formatYgoAttribute,
+  formatYgoCardType,
+} from '../../config/ygoDisplayLabels'
+import {
   getCardImageUrl,
   isExtraDeckCard,
 } from '../../config/ygoCardUtils'
@@ -52,6 +56,7 @@ export function useCardLibraryTableColumns({
         width: 168,
         align: 'center',
         ellipsis: true,
+        render: (t) => formatYgoCardType(t),
       },
       {
         title: '属性 / 攻防',
@@ -60,7 +65,7 @@ export function useCardLibraryTableColumns({
         align: 'center',
         render: (_, row) => {
           if (/monster/i.test(row.type || '')) {
-            return `${row.attribute || '-'} · ${row.atk ?? '?'} / ${row.def ?? '?'}`
+            return `${formatYgoAttribute(row.attribute)} · ${row.atk ?? '?'} / ${row.def ?? '?'}`
           }
           return '—'
         },

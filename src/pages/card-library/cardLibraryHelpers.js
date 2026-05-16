@@ -36,12 +36,16 @@ export function guessExtFromUrl(urlStr) {
     const u = new URL(urlStr, window.location.href)
     const m = u.pathname.match(/\.(png|webp|jpe?g)$/i)
     if (m) return m[1].toLowerCase().replace(/^jpeg$/, 'jpg')
-  } catch (_) {
+  } catch {
     /* ignore */
   }
   return null
 }
 
+/**
+ * 下载卡图：桌面版先选保存路径再由主进程拉取；浏览器环境回退为触发下载。
+ * @param {Record<string, unknown>} card
+ */
 export async function downloadCardImage(card) {
   const url = getCardImageUrlLarge(card) || getCardImageUrl(card)
   if (!url) {
@@ -51,48 +55,72 @@ export async function downloadCardImage(card) {
   const safeName = String(card.name || 'card').replace(/[/\\?%*:|"<>]/g, '_')
   const idPart = card.id != null ? String(card.id) : '0'
   const api = typeof window !== 'undefined' ? window.electronAPI : null
+  let ext = guessExtFromUrl(url) || 'jpg'
+  const baseFile = `${idPart}-${safeName}.${ext}`
+
+  if (api?.saveRemoteImageAs) {
+    try {
+      const res = await api.saveRemoteImageAs({ url, defaultPath: baseFile })
+      if (res?.canceled) {
+        return
+      }
+      if (res?.success) {
+        toast.success('卡图已保存')
+        return
+      }
+      toast.error(res?.error || '保存失败')
+    } catch (e) {
+      toast.error(e?.message || '保存失败')
+    }
+    return
+  }
 
   try {
     const res = await fetch(url)
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`)
+    }
     const blob = await res.blob()
-    let ext = guessExtFromUrl(url)
-    if (!ext) {
+    if (!guessExtFromUrl(url)) {
       if (blob.type.includes('png')) ext = 'png'
       else if (blob.type.includes('webp')) ext = 'webp'
-      else if (blob.type.includes('jpeg') || blob.type.includes('jpg'))
-        ext = 'jpg'
-      else ext = 'jpg'
+      else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) ext = 'jpg'
     }
 
-    const baseFile = `${idPart}-${safeName}.${ext}`
+    const fileName = `${idPart}-${safeName}.${ext}`
     const buf = await blob.arrayBuffer()
 
     if (api?.saveFileDialog && api?.writeFile) {
       const dlg = await api.saveFileDialog({
-        defaultPath: baseFile,
+        title: '保存卡图',
+        defaultPath: fileName,
         filters: [
-          {
-            name: '图像',
-            extensions: ['jpg', 'jpeg', 'png', 'webp'],
-          },
+          { name: '图像', extensions: ['jpg', 'jpeg', 'png', 'webp'] },
           { name: '所有文件', extensions: ['*'] },
         ],
       })
-      if (dlg.canceled || !dlg.filePath) return
+      if (dlg.canceled || !dlg.filePath) {
+        return
+      }
       const wr = await api.writeFile(dlg.filePath, bufferToBase64(buf))
-      if (wr.success) toast.success('卡图已保存')
-      else toast.error(wr.error || '保存失败')
+      if (wr.success) {
+        toast.success('卡图已保存')
+      } else {
+        toast.error(wr.error || '保存失败')
+      }
       return
     }
 
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = baseFile
+    a.download = fileName
+    a.rel = 'noopener'
+    document.body.appendChild(a)
     a.click()
+    a.remove()
     URL.revokeObjectURL(a.href)
     toast.success('已开始下载')
   } catch (e) {
-    toast.error(e.message || '下载失败')
-    window.open(url, '_blank', 'noopener,noreferrer')
+    toast.error(e?.message || '下载失败')
   }
 }

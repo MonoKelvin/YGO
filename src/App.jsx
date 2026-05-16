@@ -12,8 +12,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useRef } fro
 
 import CardGenerator from './pages/card-generator/CardGenerator'
 import CardBrowser from './pages/card-browser/CardBrowser'
-import CardLibrary from './pages/card-library/CardLibrary'
-import CardDetail from './pages/card-library/CardDetail'
+import LibraryRoutes from './pages/card-library/LibraryRoutes'
 import DeckRoutes from './pages/deck/DeckRoutes'
 import DeckListPage from './pages/deck/DeckListPage'
 import DeckDetailPage from './pages/deck/DeckDetailPage'
@@ -22,6 +21,7 @@ import Layout from './components/layout/Layout'
 import RouteErrorBoundary from './components/common/RouteErrorBoundary'
 import useCardStore from './store/useStore'
 import useYgoDatabaseStore from './store/useYgoDatabaseStore'
+import { normalizeCard } from './config/cardConstants'
 import { DEFAULT_LIBRARY_PAGE_SIZE, normalizeLibraryPageSize } from './config/librarySettings'
 import { resolveThemePrimaryColor } from './config/lobePrimaryColor'
 import { pickPersistedSettings } from './utils/pickPersistedSettings'
@@ -133,10 +133,11 @@ function PageCache() {
                     top: 0,
                     left: 0,
                     width: '100%',
+                    height: '100%',
                     minHeight: '100%',
                 }}
             >
-                <CardLibrary />
+                <LibraryRoutes />
             </div>
 
             {/* 卡组 */}
@@ -257,6 +258,20 @@ function AppContent() {
                                 useCardStore.getState().settings.libraryPageSize ?? DEFAULT_LIBRARY_PAGE_SIZE,
                             )
                             useYgoDatabaseStore.getState().setFilters({ apiPageSize: ps })
+
+                            if (electron.readCards) {
+                                const cardsRes = await electron.readCards()
+                                if (cardsRes?.success && Array.isArray(cardsRes.data)) {
+                                    const rows = cardsRes.data.map((row, idx) => {
+                                        const id =
+                                            row?.id != null && String(row.id).trim() !== ''
+                                                ? String(row.id)
+                                                : `${Date.now()}-${idx}`
+                                        return normalizeCard({ ...row, id })
+                                    })
+                                    useCardStore.getState().loadCards(rows)
+                                }
+                            }
                         })(),
                         new Promise((_, reject) =>
                             setTimeout(() => reject(new Error('settings init timeout')), INIT_MS),

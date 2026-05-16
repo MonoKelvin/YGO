@@ -9,6 +9,7 @@ import {
   resolveSpellTrapArtUrl,
 } from '../../config/moldAssets'
 import { ensureMoldFontsLoaded } from '../../config/moldFonts'
+import { resolveImageSrcForPreview } from '../../utils/cardIllustrationActions'
 import { paintCard } from './cardCanvasDraw'
 import './CardPreview.css'
 
@@ -22,12 +23,50 @@ function loadImage(src) {
       resolve(null)
       return
     }
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => resolve(null)
-    img.src = src
+    const isHttp = /^https?:/i.test(src)
+    const loadOnce = (withCors) => {
+      const img = new Image()
+      if (withCors && isHttp) {
+        img.crossOrigin = 'anonymous'
+      }
+      img.onload = () => resolve(img)
+      img.onerror = () => {
+        if (withCors && isHttp) {
+          loadOnce(false)
+        } else {
+          resolve(null)
+        }
+      }
+      img.src = src
+    }
+    loadOnce(isHttp)
   })
+}
+
+/**
+ * 在空闲或下一宏任务再绘制，避免与表单输入同一帧争抢主线程造成卡顿。
+ * @param {() => void} fn
+ * @returns {number}
+ */
+function schedulePaintWork(fn) {
+  if (typeof window === 'undefined') {
+    return 0
+  }
+  if ('requestIdleCallback' in window) {
+    return window.requestIdleCallback(fn, { timeout: 800 })
+  }
+  return window.setTimeout(fn, 0)
+}
+
+function cancelScheduledPaint(id) {
+  if (id == null || typeof window === 'undefined') {
+    return
+  }
+  if ('cancelIdleCallback' in window) {
+    window.cancelIdleCallback(id)
+  } else {
+    window.clearTimeout(id)
+  }
 }
 
 /**
@@ -60,45 +99,64 @@ export default function CardPreview({ card: rawCard, className = '', canvasClass
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     let cancelled = false
-
-    async function paint() {
-      await ensureMoldFontsLoaded()
-      if (typeof document !== 'undefined' && document.fonts?.ready) {
+    const idleId = schedulePaintWork(() => {
+      void (async () => {
         try {
-          await document.fonts.ready
-        } catch {
-          /* ignore */
+          if (cancelled) return
+          await ensureMoldFontsLoaded()
+          if (cancelled) return
+          if (typeof document !== 'undefined' && document.fonts?.ready) {
+            try {
+              await document.fonts.ready
+            } catch {
+              /* ignore */
+            }
+          }
+          if (cancelled) return
+
+          const frameUrl = resolveFrameArtUrl(card)
+          const resolvedAttr =
+            card.cardType === 'monster'
+              ? resolveAttributeArtUrl(card.attribute)
+              : resolveSpellTrapArtUrl(card.cardType)
+          const attrUrl =
+            resolvedAttr ||
+            (card.cardType === 'monster' && !(card.attribute && String(card.attribute).trim())
+              ? ''
+              : PLACEHOLDER_ASSET_URL)
+          const starUrl = resolveMonsterStarIconUrl(card) || ''
+
+          let artSrc = ''
+          try {
+            artSrc = await resolveImageSrcForPreview(card.imagePath || '')
+          } catch {
+            artSrc = String(card.imagePath || '').trim()
+          }
+
+          const [frameImg, attrImg, artImg, starIconImg] = await Promise.all([
+            loadImage(frameUrl),
+            loadImage(attrUrl),
+            loadImage(artSrc),
+            loadImage(starUrl),
+          ])
+
+          if (cancelled) return
+
+          paintCard(ctx, card, {
+            frameImg: frameImg || undefined,
+            attrImg: attrImg || undefined,
+            artImg: artImg || undefined,
+            starIconImg: starIconImg || undefined,
+          })
+        } catch (err) {
+          console.error('[CardPreview] paint failed', err)
         }
-      }
-      const frameUrl = resolveFrameArtUrl(card)
-      const resolvedAttr =
-        card.cardType === 'monster'
-          ? resolveAttributeArtUrl(card.attribute)
-          : resolveSpellTrapArtUrl(card.cardType)
-      /** 框架图缺失时不叠整张占位图；属性/魔陷图标缺失时用空白占位 */
-      const attrUrl = resolvedAttr || PLACEHOLDER_ASSET_URL
-      const starUrl = resolveMonsterStarIconUrl(card) || ''
+      })()
+    })
 
-      const [frameImg, attrImg, artImg, starIconImg] = await Promise.all([
-        loadImage(frameUrl),
-        loadImage(attrUrl),
-        loadImage(card.imagePath || ''),
-        loadImage(starUrl),
-      ])
-
-      if (cancelled) return
-
-      paintCard(ctx, card, {
-        frameImg: frameImg || undefined,
-        attrImg: attrImg || undefined,
-        artImg: artImg || undefined,
-        starIconImg: starIconImg || undefined,
-      })
-    }
-
-    paint()
     return () => {
       cancelled = true
+      cancelScheduledPaint(idleId)
     }
   }, [cardSnapshot])
 

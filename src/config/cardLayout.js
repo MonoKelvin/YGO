@@ -19,7 +19,8 @@ export const CARD_NAME_CHAR_HARD_CAP = 32
  * 卡名整体水平缩放下限（相对 `z.name.maxWidth`）。
  * 低于此则不再缩小整串，改为省略号截断，避免字过小不可读。
  */
-export const CARD_NAME_MIN_SCALE_X = 0.38
+/** 卡名整串水平缩放可接受下限（再低则先缩字宽仍过长再截断） */
+export const CARD_NAME_MIN_SCALE_X = 0.18
 
 /** 逻辑宽度（与既有预览一致） */
 export const CARD_W = 350
@@ -91,8 +92,8 @@ export function getYgoLayoutZones(card, canvasW = CARD_W, canvasH = CARD_H) {
   const attrCy = attribute.y + attribute.h / 2
   const attrR = Math.min(attribute.w, attribute.h) / 2
 
-  /** 卡名区：y 略低于模板 96，避免在框内偏上（相对 813 参考坐标微调） */
-  const name = { x: 65 * r, y: 102 * r, maxWidth: 610 * r }
+  /** 卡名区：对齐 ygo-card common.js name.position [65, 96] */
+  const name = { x: 65 * r, y: 96 * r, maxWidth: 610 * r }
 
   const levelRef = {
     baseX: 686 * r,
@@ -102,15 +103,18 @@ export function getYgoLayoutZones(card, canvasW = CARD_W, canvasH = CARD_H) {
     starSize: 50 * r,
   }
 
-  const raceLine = { x: 53 * r, y: 915 * r, maxWidth: 610 * r }
+  /** 种族行：与效果正文左缘对齐（ygo-card monsterDesc.position[0]=64） */
+  const raceLine = { x: 64 * r, y: 915 * r, maxWidth: 683 * r }
 
-  const spellTypeLine = { x: 750 * r, y: 185 * r }
+  /** 魔陷类型标题：与 spellDesc 左对齐；Y 略上移避免偏下 */
+  const spellTypeLine = { x: 66 * r, y: 166 * r, maxWidth: 683 * r }
 
+  /** 描述行高为参考值；实际绘制在 cardCanvasDraw 中按可读性下限再放大 */
   const monsterDesc = {
     x: 64 * r,
     y: 942 * r,
     maxWidth: 683 * r,
-    lineHeight: 26 * r,
+    lineHeight: 28 * r,
     maxLines: 6,
   }
 
@@ -118,7 +122,7 @@ export function getYgoLayoutZones(card, canvasW = CARD_W, canvasH = CARD_H) {
     x: 66 * r,
     y: 915 * r,
     maxWidth: 683 * r,
-    lineHeight: 24 * r,
+    lineHeight: 27 * r,
     maxLines: 9,
   }
 
@@ -126,38 +130,42 @@ export function getYgoLayoutZones(card, canvasW = CARD_W, canvasH = CARD_H) {
     x: 128 * r,
     y: 770 * r,
     maxWidth: 556 * r,
-    lineHeight: 24.5 * r,
+    lineHeight: 26 * r,
     maxLines: 5,
   }
 
-  const lineUnderStats = {
-    x: 64 * r,
-    y: 1079 * r,
-    w: 683 * r,
-  }
-
+  /**
+   * 攻防行：中文标签（cn_fzdbs）与数字（number）分区排布，留出间距避免遮挡。
+   */
+  const statsY = 1095 * r
   const atk = {
-    x: 585 * r,
-    y: 1107 * r,
-    maxWidth: 95 * r,
-    labelX: 513 * r,
-    labelY: 1107 * r,
+    x: 552 * r,
+    y: statsY,
+    maxWidth: 64 * r,
+    labelX: 424 * r,
+    labelY: statsY,
   }
 
   const def = {
-    x: 750 * r,
-    y: 1107 * r,
-    maxWidth: 72 * r,
-    labelX: 678 * r,
-    labelY: 1107 * r,
+    x: 730 * r,
+    y: statsY,
+    maxWidth: 64 * r,
+    labelX: 600 * r,
+    labelY: statsY,
   }
 
   const linkDef = {
-    x: 750 * r,
-    y: 1107 * r,
-    maxWidth: 72 * r,
-    linkLabelX: 716 * r,
-    linkLabelY: 1107 * r,
+    x: 732 * r,
+    y: statsY,
+    maxWidth: 64 * r,
+    linkLabelX: 638 * r,
+    linkLabelY: statsY,
+  }
+
+  const lineUnderStats = {
+    x: 56 * r,
+    y: 1072 * r,
+    w: 672 * r,
   }
 
   const password = { x: 40 * r, y: 1147 * r }

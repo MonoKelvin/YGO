@@ -175,6 +175,7 @@ export default function CardLibraryToolbarTable({
                   <tr
                     key={row.id}
                     className="card-lib-row"
+                    title="双击打开卡牌详情"
                     onDoubleClick={() => goDetail(row)}
                   >
                     <td

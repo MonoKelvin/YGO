@@ -5,6 +5,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFileDialog: (options) => ipcRenderer.invoke('open-file-dialog', options),
   saveFileDialog: (options) => ipcRenderer.invoke('save-file-dialog', options),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+  /** 本地路径 / file URL → Data URL（canvas 插图，绕过 webSecurity 禁止 file://） */
+  readLocalImageAsDataUrl: (src) =>
+    ipcRenderer.invoke('read-local-image-as-data-url', src),
+  /** 主进程探测 http(s) 插图是否可访问（避免渲染进程被防盗链 / CORS 误判） */
+  probeRemoteImageUrl: (url) => ipcRenderer.invoke('probe-remote-image-url', url),
+  /** 主进程拉取远程图片为 Data URL，供 canvas 绘制与 PNG 导出（同源像素，无 CORS 污染） */
+  fetchRemoteImageAsDataUrl: (url) =>
+    ipcRenderer.invoke('fetch-remote-image-as-data-url', url),
+  /** 保存对话框 + 主进程下载远程图片（卡牌数据库下载卡图） */
+  saveRemoteImageAs: (payload) => ipcRenderer.invoke('save-remote-image-as', payload),
   writeFile: (filePath, data) => ipcRenderer.invoke('write-file', filePath, data),
   getAppPath: () => ipcRenderer.invoke('get-app-path'),
   getResourcePath: () => ipcRenderer.invoke('get-resource-path'),
@@ -17,6 +27,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('reset-data-directory-default'),
   openPathInExplorer: (targetPath) =>
     ipcRenderer.invoke('open-path-in-explorer', targetPath),
+  /** 在资源管理器中定位到本地文件（需绝对路径） */
+  revealFileInFolder: (filePath) =>
+    ipcRenderer.invoke('reveal-file-in-folder', filePath),
   readUserSettings: () => ipcRenderer.invoke('read-user-settings'),
   saveUserSettings: (settings) => ipcRenderer.invoke('save-user-settings', settings),
   getCardsPath: () => ipcRenderer.invoke('get-cards-path'),

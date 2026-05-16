@@ -63,6 +63,49 @@
   flex-shrink: 0;
 }
 
+/** 预览区域：隐藏 UI 时占位与离屏画布共用同一槽位 */
+.card-generator-preview-slot {
+  position: relative;
+  width: 100%;
+}
+
+.card-generator-preview-slot--hidden-ui {
+  aspect-ratio: 813 / 1185;
+}
+
+.card-generator-preview-live--visible {
+  position: relative;
+  width: 100%;
+}
+
+/**
+ * 离屏保留画布：仍参与布局逻辑尺寸，避免占位与导出尺寸不一致。
+ * 移出视口而非 `display:none`，保证 `toDataURL` 可用。
+ */
+.card-generator-preview-live--offscreen {
+  position: absolute;
+  left: -12000px;
+  top: 0;
+  width: 421px;
+  max-width: none;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.card-generator-preview-slot--hidden-ui .card-generator-preview-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.card-generator-preview-slot .card-generator-preview-paused-wrap {
+  z-index: 3;
+}
+
+.card-generator-preview-slot .card-generator-preview-paused-blur {
+  z-index: 4;
+}
+
 /** 表单项控件列：与 Lobe Form + antd Form.Item 布局对齐 */
 .card-generator-form .ant-form-item-control-input-content {
   width: 100%;
@@ -231,4 +274,66 @@ div.card-generator-preview-placeholder .anticon {
     width: 100%;
     padding-block: var(--spacing-sm);
   }
+}
+
+/** 插图：本地 / URL 组合一行 */
+.card-generator-illustration-block {
+  width: 100%;
+  min-width: 0;
+}
+
+.card-generator-illustration-combo {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.15));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-container, #fff);
+}
+
+.card-generator-illustration-mode-select {
+  max-width: 76px !important;
+  flex-shrink: 0;
+}
+
+.card-generator-illustration-mode-select.ant-select-outlined .ant-select-selector,
+.card-generator-illustration-mode-select .ant-select-selector {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.card-generator-illustration-input-row .ant-input,
+.card-generator-illustration-input-row .ant-input-affix-wrapper,
+.card-generator-illustration-input-row .card-generator-illustration-input-main {
+  background: color-mix(in srgb, var(--color-bg-container, #fff) 86%, #fff) !important;
+}
+
+[data-theme='dark'] .card-generator-illustration-input-row .ant-input,
+[data-theme='dark'] .card-generator-illustration-input-row .ant-input-affix-wrapper,
+[data-theme='dark'] .card-generator-illustration-input-row .card-generator-illustration-input-main {
+  background: color-mix(
+    in srgb,
+    var(--color-bg-container, #16181c) 72%,
+    var(--color-bg-layout, #0c0d0f)
+  ) !important;
+}
+
+.card-generator-illustration-input-tooltip-wrap {
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+
+.card-generator-illustration-input-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-generator-illustration-pick-btn {
+  flex-shrink: 0;
 }
